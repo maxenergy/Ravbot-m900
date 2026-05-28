@@ -1,10 +1,10 @@
 # 快速开始
 
-欢迎使用 QuantClaw！本指南帮你在几分钟内完成安装并运行。
+欢迎使用 RavBot！本指南帮你在几分钟内完成安装并运行。
 
-## QuantClaw 是什么？
+## RavBot 是什么？
 
-QuantClaw 是 OpenClaw 的 C++17 高性能实现——一个本地运行的 AI Agent 框架，可执行命令、控制浏览器、管理文件，并接入多种聊天平台，内存占用极低，无运行时依赖。
+RavBot 是 OpenClaw 的 C++17 高性能实现——一个本地运行的 AI Agent 框架，可执行命令、控制浏览器、管理文件，并接入多种聊天平台，内存占用极低，无运行时依赖。
 
 ## 前置条件
 
@@ -20,8 +20,8 @@ QuantClaw 是 OpenClaw 的 C++17 高性能实现——一个本地运行的 AI A
 
 ```bash
 # 克隆仓库
-git clone https://github.com/QuantClaw/QuantClaw.git
-cd QuantClaw
+git clone https://github.com/RavBot/RavBot.git
+cd RavBot
 
 # 安装系统依赖（Ubuntu/Debian）
 sudo apt install build-essential cmake libssl-dev \
@@ -33,7 +33,7 @@ cmake ..
 cmake --build . --parallel
 
 # 验证编译
-./quantclaw_tests
+./ravbot_tests
 
 # 安装（可选）
 sudo cmake --install .
@@ -49,18 +49,18 @@ bash scripts/install.sh --user
 sudo bash scripts/install.sh --system
 ```
 
-安装脚本会自动检测系统、安装依赖、编译源码、执行 onboarding，并安装后台服务定义。macOS 默认安装到 `~/.quantclaw/bin`。
+安装脚本会自动检测系统、安装依赖、编译源码、执行 onboarding，并安装后台服务定义。macOS 默认安装到 `~/.ravbot/bin`。
 
 ### 方式三：Docker
 
 ```bash
 docker run -d \
-  --name quantclaw \
+  --name ravbot \
   -p 18800:18800 \
   -p 18801:18801 \
   -e OPENAI_API_KEY=sk-... \
-  -v quantclaw_data:/home/quantclaw/.quantclaw \
-  quantclaw:latest
+  -v ravbot_data:/home/ravbot/.ravbot \
+  ravbot:latest
 ```
 
 ## 初始化设置
@@ -69,15 +69,15 @@ docker run -d \
 
 ```bash
 # 交互式设置向导（推荐）
-quantclaw onboard
+ravbot onboard
 
 # 或快速设置（无提示）
-quantclaw onboard --quick
+ravbot onboard --quick
 ```
 
 向导会：
-- 创建 `~/.quantclaw/quantclaw.json`（配置文件）
-- 创建 `~/.quantclaw/agents/main/workspace/`（含全部 8 个工作空间文件）
+- 创建 `~/.ravbot/ravbot.json`（配置文件）
+- 创建 `~/.ravbot/agents/main/workspace/`（含全部 8 个工作空间文件）
 - 生成网关认证 token 和默认配置
 - 可选安装后台服务（Linux: `systemd --user`，macOS: `launchd`）
 
@@ -87,23 +87,23 @@ quantclaw onboard --quick
 
 ```bash
 # 前台运行
-quantclaw gateway run
+ravbot gateway run
 
 # 或安装并启动后台服务
-quantclaw gateway install
-quantclaw gateway start
+ravbot gateway install
+ravbot gateway start
 ```
 
 ### 发送消息
 
 ```bash
-quantclaw agent "你好！介绍一下你自己。"
+ravbot agent "你好！介绍一下你自己。"
 ```
 
 ### 打开 Web 仪表板
 
 ```bash
-quantclaw dashboard
+ravbot dashboard
 ```
 
 在浏览器中打开 `http://127.0.0.1:18801`——包含聊天、会话管理和配置界面。
@@ -125,7 +125,7 @@ quantclaw dashboard
 
 **首次访问：**
 1. 在浏览器中打开 `http://127.0.0.1:18801`
-2. 输入你在 `~/.quantclaw/quantclaw.json` 中配置的 token
+2. 输入你在 `~/.ravbot/ravbot.json` 中配置的 token
 3. Token 会保存在浏览器 localStorage 中，后续访问无需重复输入
 
 **关闭认证**（生产环境不推荐）：
@@ -140,30 +140,30 @@ quantclaw dashboard
 ```
 
 **修改 Token：**
-1. 编辑 `~/.quantclaw/quantclaw.json`，修改 `gateway.auth.token` 的值
-2. 运行 `quantclaw config reload`（或重启网关）
+1. 编辑 `~/.ravbot/ravbot.json`，修改 `gateway.auth.token` 的值
+2. 运行 `ravbot config reload`（或重启网关）
 3. 清除浏览器中 `127.0.0.1:18801` 的 localStorage，然后输入新 token
 
 ## 命令行使用
 
 ```bash
 # 发送消息（自动创建会话）
-quantclaw agent "今天天气怎么样？"
+ravbot agent "今天天气怎么样？"
 
 # 使用指定会话
-quantclaw agent --session my:project "继续上次的讨论"
+ravbot agent --session my:project "继续上次的讨论"
 
 # 一次性查询，不创建会话
-quantclaw eval "2 + 2 等于多少？"
+ravbot eval "2 + 2 等于多少？"
 
 # 查看网关状态
-quantclaw health
-quantclaw status
+ravbot health
+ravbot status
 ```
 
 ## 配置
 
-主配置文件为 `~/.quantclaw/quantclaw.json`：
+主配置文件为 `~/.ravbot/ravbot.json`：
 
 ```json
 {
@@ -212,15 +212,15 @@ cmake --build . --parallel
 ### 网关无法启动
 
 ```bash
-quantclaw config get gateway.port   # 检查端口配置
-quantclaw doctor                    # 运行完整诊断
+ravbot config get gateway.port   # 检查端口配置
+ravbot doctor                    # 运行完整诊断
 ```
 
 ### API Key 问题
 
 ```bash
-quantclaw health                    # 检查网关连通性
-quantclaw config get llm.model      # 验证模型/Provider 配置
+ravbot health                    # 检查网关连通性
+ravbot config get llm.model      # 验证模型/Provider 配置
 ```
 
 ---

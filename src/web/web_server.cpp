@@ -1,12 +1,12 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/web/web_server.hpp"
+#include "ravbot/web/web_server.hpp"
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
-namespace quantclaw::web {
+namespace ravbot::web {
 
 WebServer::WebServer(int port, std::shared_ptr<spdlog::logger> logger)
     : port_(port), logger_(std::move(logger)), running_(false) {
@@ -97,7 +97,7 @@ void WebServer::server_loop() {
           }
           // Skip auth for static file paths (UI assets) and control UI
           if (req.path == "/" ||
-              req.path.rfind("/__quantclaw__/control/", 0) == 0 ||
+              req.path.rfind("/__ravbot__/control/", 0) == 0 ||
               req.path.find(".js") != std::string::npos ||
               req.path.find(".css") != std::string::npos ||
               req.path.find(".html") != std::string::npos ||
@@ -207,4 +207,4 @@ std::string WebServer::create_success_response(const nlohmann::json& data) {
   return success_response.dump();
 }
 
-}  // namespace quantclaw::web
+}  // namespace ravbot::web

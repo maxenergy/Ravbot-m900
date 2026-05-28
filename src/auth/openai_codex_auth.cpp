@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/auth/openai_codex_auth.hpp"
+#include "ravbot/auth/openai_codex_auth.hpp"
 
 #include <array>
 #include <chrono>
@@ -30,13 +30,13 @@
 #ifdef _WIN32
 #include <shellapi.h>
 #endif
-#include "quantclaw/providers/curl_raii.hpp"
-#include "quantclaw/providers/provider_error.hpp"
+#include "ravbot/providers/curl_raii.hpp"
+#include "ravbot/providers/provider_error.hpp"
 
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 
-namespace quantclaw::auth {
+namespace ravbot::auth {
 namespace {
 
 constexpr char kClientId[] = "app_EMoamEEZ73f0CkXaXp7hrann";
@@ -466,7 +466,7 @@ OpenAICodexOAuthClient::LoginInteractive(std::istream& in, std::ostream& out) {
       callback_state.done = true;
       callback_state.ok = false;
       callback_state.error = "OAuth state mismatch";
-      res.set_content(html_response("QuantClaw login failed",
+      res.set_content(html_response("RavBot login failed",
                                     "State validation failed. You can close "
                                     "this window and retry."),
                       "text/html");
@@ -474,14 +474,14 @@ OpenAICodexOAuthClient::LoginInteractive(std::istream& in, std::ostream& out) {
       callback_state.done = true;
       callback_state.ok = false;
       callback_state.error = req.get_param_value("error");
-      res.set_content(html_response("QuantClaw login failed",
+      res.set_content(html_response("RavBot login failed",
                                     "OpenAI returned an authorization error."),
                       "text/html");
     } else if (req.has_param("code")) {
       callback_state.done = true;
       callback_state.ok = true;
       callback_state.code = req.get_param_value("code");
-      res.set_content(html_response("QuantClaw login complete",
+      res.set_content(html_response("RavBot login complete",
                                     "Authorization succeeded. You can close "
                                     "this window."),
                       "text/html");
@@ -489,7 +489,7 @@ OpenAICodexOAuthClient::LoginInteractive(std::istream& in, std::ostream& out) {
       callback_state.done = true;
       callback_state.ok = false;
       callback_state.error = "Missing authorization code";
-      res.set_content(html_response("QuantClaw login failed",
+      res.set_content(html_response("RavBot login failed",
                                     "The callback did not include an "
                                     "authorization code."),
                       "text/html");
@@ -599,7 +599,7 @@ std::string OpenAICodexCredentialResolver::ResolveAccessToken(
   auto record = store_.Load();
   if (!record.has_value()) {
     throw ProviderError(ProviderErrorKind::kAuthError, 401,
-                        "OpenAI Codex is not logged in. Run `quantclaw models "
+                        "OpenAI Codex is not logged in. Run `ravbot models "
                         "auth login --provider openai-codex`.",
                         "openai-codex");
   }
@@ -612,7 +612,7 @@ std::string OpenAICodexCredentialResolver::ResolveAccessToken(
     throw ProviderError(
         ProviderErrorKind::kAuthError, 401,
         "OpenAI Codex credentials have expired and are not refreshable. Run "
-        "`quantclaw models auth login --provider openai-codex` again.",
+        "`ravbot models auth login --provider openai-codex` again.",
         "openai-codex");
   }
 
@@ -629,10 +629,10 @@ std::string OpenAICodexCredentialResolver::ResolveAccessToken(
     }
     throw ProviderError(
         ProviderErrorKind::kAuthError, 401,
-        "OpenAI Codex credentials could not be refreshed. Run `quantclaw "
+        "OpenAI Codex credentials could not be refreshed. Run `ravbot "
         "models auth login --provider openai-codex` again.",
         "openai-codex");
   }
 }
 
-}  // namespace quantclaw::auth
+}  // namespace ravbot::auth

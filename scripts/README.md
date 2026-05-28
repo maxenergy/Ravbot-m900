@@ -10,7 +10,7 @@ Run helper scripts from the repository root.
 
 ## `scripts/install.sh`
 
-- `--user` installs `quantclaw` into `~/.quantclaw/bin` and is the default on macOS
+- `--user` installs `ravbot` into `~/.ravbot/bin` and is the default on macOS
 - `--system` installs into `/usr/local/bin` and is the default on Linux
 - `--binary PATH` reuses an existing binary instead of rebuilding
 - Runs `onboard --quick` after installation and installs the platform service definition unless `--skip-service` is provided

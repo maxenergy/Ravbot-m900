@@ -1,16 +1,16 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/plugins/hook_manager.hpp"
+#include "ravbot/plugins/hook_manager.hpp"
 
 #include <algorithm>
 #include <future>
 #include <thread>
 #include <unordered_map>
 
-#include "quantclaw/plugins/sidecar_manager.hpp"
+#include "ravbot/plugins/sidecar_manager.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 // Hook mode classification — matches OpenClaw exactly.
 static const std::unordered_map<std::string, HookMode> kHookModes = {
@@ -275,4 +275,4 @@ size_t HookManager::HandlerCount(const std::string& hook_name) const {
   return it->second.size();
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

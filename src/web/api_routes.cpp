@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/web/api_routes.hpp"
+#include "ravbot/web/api_routes.hpp"
 
 #include <chrono>
 #include <condition_variable>
@@ -15,16 +15,16 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/core/agent_loop.hpp"
-#include "quantclaw/core/prompt_builder.hpp"
-#include "quantclaw/gateway/gateway_server.hpp"
-#include "quantclaw/plugins/plugin_system.hpp"
-#include "quantclaw/session/session_manager.hpp"
-#include "quantclaw/tools/tool_registry.hpp"
-#include "quantclaw/web/web_server.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/core/agent_loop.hpp"
+#include "ravbot/core/prompt_builder.hpp"
+#include "ravbot/gateway/gateway_server.hpp"
+#include "ravbot/plugins/plugin_system.hpp"
+#include "ravbot/session/session_manager.hpp"
+#include "ravbot/tools/tool_registry.hpp"
+#include "ravbot/web/web_server.hpp"
 
-namespace quantclaw::web {
+namespace ravbot::web {
 
 // --- Helpers ---
 
@@ -52,15 +52,15 @@ static std::string generate_openai_session_key() {
 
 void register_api_routes(
     WebServer& server,
-    const std::shared_ptr<quantclaw::SessionManager>& session_manager,
-    const std::shared_ptr<quantclaw::AgentLoop>& agent_loop,
-    const std::shared_ptr<quantclaw::PromptBuilder>& prompt_builder,
-    const std::shared_ptr<quantclaw::ToolRegistry>& /*tool_registry*/,
-    const quantclaw::QuantClawConfig& config,
-    quantclaw::gateway::GatewayServer& gateway_server,
+    const std::shared_ptr<ravbot::SessionManager>& session_manager,
+    const std::shared_ptr<ravbot::AgentLoop>& agent_loop,
+    const std::shared_ptr<ravbot::PromptBuilder>& prompt_builder,
+    const std::shared_ptr<ravbot::ToolRegistry>& /*tool_registry*/,
+    const ravbot::RavBotConfig& config,
+    ravbot::gateway::GatewayServer& gateway_server,
     const std::shared_ptr<spdlog::logger>& logger,
     const std::function<void()>& reload_fn,
-    quantclaw::PluginSystem* plugin_system) {
+    ravbot::PluginSystem* plugin_system) {
   // --- GET /api/health ---
   server.AddRawRoute(
       "/api/health", "GET",
@@ -164,9 +164,9 @@ void register_api_routes(
           auto history = session_manager->GetHistory(session_key, 50);
 
           // Convert to LLM Messages
-          std::vector<quantclaw::Message> llm_history;
+          std::vector<ravbot::Message> llm_history;
           for (const auto& smsg : history) {
-            quantclaw::Message m;
+            ravbot::Message m;
             m.role = smsg.role;
             m.content = smsg.content;
             llm_history.push_back(m);
@@ -193,7 +193,7 @@ void register_api_routes(
 
           // Persist all new messages
           for (const auto& msg : new_messages) {
-            quantclaw::SessionMessage smsg;
+            ravbot::SessionMessage smsg;
             smsg.role = msg.role;
             smsg.content = msg.content;
             session_manager->AppendMessage(session_key, smsg);
@@ -262,10 +262,10 @@ void register_api_routes(
         std::string system_prompt = prompt_builder->BuildFull();
 
         auto history = session_manager->GetHistory(session_key, 50);
-        std::vector<quantclaw::Message> llm_history;
+        std::vector<ravbot::Message> llm_history;
         llm_history.reserve(history.size());
         for (const auto& smsg : history) {
-          quantclaw::Message m;
+          ravbot::Message m;
           m.role = smsg.role;
           m.content = smsg.content;
           llm_history.push_back(std::move(m));
@@ -281,7 +281,7 @@ void register_api_routes(
           try {
             auto new_messages = agent_loop->ProcessMessageStream(
                 message, llm_history, system_prompt,
-                [&state](const quantclaw::AgentEvent& event) {
+                [&state](const ravbot::AgentEvent& event) {
                   std::string sse = "event: " + event.type +
                                     "\ndata: " + event.data.dump() + "\n\n";
                   std::lock_guard<std::mutex> lock(state->mu);
@@ -291,7 +291,7 @@ void register_api_routes(
 
             // Persist new messages to the session transcript
             for (const auto& msg : new_messages) {
-              quantclaw::SessionMessage smsg;
+              ravbot::SessionMessage smsg;
               smsg.role = msg.role;
               smsg.content = msg.content;
               session_manager->AppendMessage(session_key, smsg);
@@ -515,7 +515,7 @@ void register_api_routes(
 
           // Extract the last user message
           std::string user_message;
-          std::vector<quantclaw::Message> history;
+          std::vector<ravbot::Message> history;
           for (const auto& msg : body["messages"]) {
             std::string role = msg.value("role", "");
             std::string content = msg.value("content", "");
@@ -535,7 +535,7 @@ void register_api_routes(
 
           // Extract system prompt from messages
           std::string system_prompt;
-          std::vector<quantclaw::Message> llm_history;
+          std::vector<ravbot::Message> llm_history;
           for (const auto& msg : history) {
             if (msg.role == "system") {
               system_prompt += msg.text();
@@ -568,7 +568,7 @@ void register_api_routes(
             };
             auto state = std::make_shared<StreamState>();
             std::string resp_id =
-                "chatcmpl-qc-" + std::to_string(std::chrono::system_clock::now()
+                "chatcmpl-ravbot-" + std::to_string(std::chrono::system_clock::now()
                                                     .time_since_epoch()
                                                     .count());
 
@@ -580,7 +580,7 @@ void register_api_routes(
                 agent_loop->ProcessMessageStream(
                     user_message, llm_history, system_prompt,
                     [&state, &model,
-                     &resp_id](const quantclaw::AgentEvent& event) {
+                     &resp_id](const ravbot::AgentEvent& event) {
                       if (event.type == "agent.text_delta" &&
                           event.data.contains("text")) {
                         nlohmann::json chunk;
@@ -649,13 +649,13 @@ void register_api_routes(
             auto usage_acc = agent_loop->GetUsageAccumulator();
             auto usage_before = usage_acc
                                     ? usage_acc->GetSession(session_key)
-                                    : quantclaw::UsageAccumulator::Stats{};
+                                    : ravbot::UsageAccumulator::Stats{};
 
             auto new_messages = agent_loop->ProcessMessage(
                 user_message, llm_history, system_prompt, session_key);
 
             auto usage_after = usage_acc ? usage_acc->GetSession(session_key)
-                                         : quantclaw::UsageAccumulator::Stats{};
+                                         : ravbot::UsageAccumulator::Stats{};
 
             std::string final_response;
             for (const auto& msg : new_messages) {
@@ -676,7 +676,7 @@ void register_api_routes(
             int64_t total_tokens = prompt_tokens + completion_tokens;
 
             nlohmann::json response;
-            response["id"] = "chatcmpl-qc-" + std::to_string(now);
+            response["id"] = "chatcmpl-ravbot-" + std::to_string(now);
             response["object"] = "chat.completion";
             response["created"] = now;
             response["model"] = model;
@@ -710,7 +710,7 @@ void register_api_routes(
         models.push_back({{"id", config.agent.model},
                           {"object", "model"},
                           {"created", now},
-                          {"owned_by", "quantclaw"}});
+                          {"owned_by", "ravbot"}});
 
         json_ok(res, {{"object", "list"}, {"data", models}});
       });
@@ -769,9 +769,9 @@ void register_api_routes(
 
           // Load history
           auto history = session_manager->GetHistory(session_key, 50);
-          std::vector<quantclaw::Message> llm_history;
+          std::vector<ravbot::Message> llm_history;
           for (const auto& smsg : history) {
-            quantclaw::Message m;
+            ravbot::Message m;
             m.role = smsg.role;
             m.content = smsg.content;
             llm_history.push_back(m);
@@ -798,7 +798,7 @@ void register_api_routes(
 
           // Persist
           for (const auto& msg : new_messages) {
-            quantclaw::SessionMessage smsg;
+            ravbot::SessionMessage smsg;
             smsg.role = msg.role;
             smsg.content = msg.content;
             session_manager->AppendMessage(session_key, smsg);
@@ -919,4 +919,4 @@ void register_api_routes(
   logger->info("Registered {} HTTP API routes", route_count);
 }
 
-}  // namespace quantclaw::web
+}  // namespace ravbot::web

@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/cli/session_commands.hpp"
+#include "ravbot/cli/session_commands.hpp"
 
 #include <iomanip>
 #include <iostream>
 
-#include "quantclaw/gateway/gateway_client.hpp"
+#include "ravbot/gateway/gateway_client.hpp"
 
-namespace quantclaw::cli {
+namespace ravbot::cli {
 
 SessionCommands::SessionCommands(std::shared_ptr<spdlog::logger> logger)
     : logger_(logger) {}
@@ -103,7 +103,7 @@ int SessionCommands::HistoryCommand(const std::vector<std::string>& args) {
 
   if (session_key.empty()) {
     std::cerr << "Error: session key required" << std::endl;
-    std::cerr << "Usage: quantclaw sessions history <session-key>" << std::endl;
+    std::cerr << "Usage: ravbot sessions history <session-key>" << std::endl;
     return 1;
   }
 
@@ -180,7 +180,7 @@ int SessionCommands::DeleteCommand(const std::vector<std::string>& args) {
 
   if (session_key.empty()) {
     std::cerr << "Error: session key required" << std::endl;
-    std::cerr << "Usage: quantclaw sessions delete <session-key>" << std::endl;
+    std::cerr << "Usage: ravbot sessions delete <session-key>" << std::endl;
     return 1;
   }
 
@@ -216,7 +216,7 @@ int SessionCommands::ResetCommand(const std::vector<std::string>& args) {
 
   if (session_key.empty()) {
     std::cerr << "Error: session key required" << std::endl;
-    std::cerr << "Usage: quantclaw sessions reset <session-key>" << std::endl;
+    std::cerr << "Usage: ravbot sessions reset <session-key>" << std::endl;
     return 1;
   }
 
@@ -240,4 +240,4 @@ int SessionCommands::ResetCommand(const std::vector<std::string>& args) {
   }
 }
 
-}  // namespace quantclaw::cli
+}  // namespace ravbot::cli

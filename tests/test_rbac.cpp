@@ -1,11 +1,11 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/security/rbac.hpp"
+#include "ravbot/security/rbac.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace quantclaw;
+using namespace ravbot;
 
 TEST(RBAC, RoleConversion) {
   EXPECT_EQ(RoleFromString("operator"), Role::kOperator);

@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <vector>
 
-#include "quantclaw/common/defer.hpp"
-#include "quantclaw/common/try.hpp"
+#include "ravbot/common/defer.hpp"
+#include "ravbot/common/try.hpp"
 
 #include <gtest/gtest.h>
 
-// ── Minimal StatusOr stand-in for QC_TRY tests ──────────────────────────────
+// ── Minimal StatusOr stand-in for RAVBOT_TRY tests ──────────────────────────────
 // (The real StatusOr lives in providers; avoid pulling in that dependency.)
 namespace {
 
@@ -39,10 +39,10 @@ Result<T> Err(T def) {
 
 }  // namespace
 
-// ── QC_TRY_ASSIGN (cross-platform) ──────────────────────────────────────────
+// ── RAVBOT_TRY_ASSIGN (cross-platform) ──────────────────────────────────────────
 
 static Result<int> double_if_ok(bool succeed) {
-  QC_TRY_ASSIGN(v, succeed ? Ok(21) : Err(0));
+  RAVBOT_TRY_ASSIGN(v, succeed ? Ok(21) : Err(0));
   return Ok(v * 2);
 }
 
@@ -59,8 +59,8 @@ TEST(QcTryAssign, UnwrapsValueOnSuccess) {
 
 TEST(QcTryAssign, ChainedCalls) {
   auto chain = [](bool a, bool b) -> Result<int> {
-    QC_TRY_ASSIGN(x, a ? Ok(10) : Err(0));
-    QC_TRY_ASSIGN(y, b ? Ok(20) : Err(0));
+    RAVBOT_TRY_ASSIGN(x, a ? Ok(10) : Err(0));
+    RAVBOT_TRY_ASSIGN(y, b ? Ok(20) : Err(0));
     return Ok(x + y);
   };
 
@@ -71,11 +71,11 @@ TEST(QcTryAssign, ChainedCalls) {
   EXPECT_EQ(*r, 30);
 }
 
-// ── QC_TRY (GCC/Clang expression-style) ─────────────────────────────────────
+// ── RAVBOT_TRY (GCC/Clang expression-style) ─────────────────────────────────────
 #if defined(__GNUC__) || defined(__clang__)
 
 static Result<int> double_if_ok_expr(bool succeed) {
-  int v = QC_TRY(succeed ? Ok(21) : Err(0));
+  int v = RAVBOT_TRY(succeed ? Ok(21) : Err(0));
   return Ok(v * 2);
 }
 
@@ -94,7 +94,7 @@ TEST(QcTry, ExpressionStyleWorks) {
 TEST(Defer, RunsOnScopeExit) {
   bool ran = false;
   {
-    auto g = quantclaw::MakeDefer([&] { ran = true; });
+    auto g = ravbot::MakeDefer([&] { ran = true; });
     EXPECT_FALSE(ran);
   }
   EXPECT_TRUE(ran);
@@ -103,7 +103,7 @@ TEST(Defer, RunsOnScopeExit) {
 TEST(Defer, DismissCancels) {
   bool ran = false;
   {
-    auto g = quantclaw::MakeDefer([&] { ran = true; });
+    auto g = ravbot::MakeDefer([&] { ran = true; });
     g.dismiss();
   }
   EXPECT_FALSE(ran);
@@ -112,7 +112,7 @@ TEST(Defer, DismissCancels) {
 TEST(Defer, ArmReenables) {
   bool ran = false;
   {
-    auto g = quantclaw::MakeDefer([&] { ran = true; });
+    auto g = ravbot::MakeDefer([&] { ran = true; });
     g.dismiss();
     EXPECT_FALSE(g.is_active());
     g.arm();
@@ -124,7 +124,7 @@ TEST(Defer, ArmReenables) {
 TEST(Defer, MoveTransfersOwnership) {
   bool ran = false;
   {
-    auto a = quantclaw::MakeDefer([&] { ran = true; });
+    auto a = ravbot::MakeDefer([&] { ran = true; });
     auto b = std::move(a);
     EXPECT_FALSE(a.is_active());  // NOLINT(bugprone-use-after-move)
     EXPECT_TRUE(b.is_active());

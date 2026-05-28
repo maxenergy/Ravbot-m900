@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef _WIN32
@@ -19,15 +19,15 @@
 #include <libproc.h>
 #endif
 
-#include "quantclaw/platform/process.hpp"
-#include "quantclaw/platform/service.hpp"
+#include "ravbot/platform/process.hpp"
+#include "ravbot/platform/service.hpp"
 
-namespace quantclaw::platform {
+namespace ravbot::platform {
 
 #ifdef __APPLE__
-constexpr const char* kServiceLabel = "com.quantclaw.gateway";
+constexpr const char* kServiceLabel = "com.ravbot.gateway";
 #else
-constexpr const char* kServiceLabel = "quantclaw-gateway";
+constexpr const char* kServiceLabel = "ravbot-gateway";
 #endif
 
 #ifdef __APPLE__
@@ -88,7 +88,7 @@ bool is_gateway_process(int pid) {
     return false;
   }
   std::string path(pathbuf);
-  return path.find("quantclaw") != std::string::npos;
+  return path.find("ravbot") != std::string::npos;
 #else
   std::string exe_path = "/proc/" + std::to_string(pid) + "/exe";
   char buf[PATH_MAX];
@@ -98,7 +98,7 @@ bool is_gateway_process(int pid) {
   }
   buf[len] = '\0';
   std::string path(buf);
-  return path.find("quantclaw") != std::string::npos;
+  return path.find("ravbot") != std::string::npos;
 #endif
 }
 
@@ -165,7 +165,7 @@ int launchd_bootout(std::shared_ptr<spdlog::logger> logger,
 
 ServiceManager::ServiceManager(std::shared_ptr<spdlog::logger> logger)
     : logger_(std::move(logger)) {
-  state_dir_ = home_directory() + "/.quantclaw";
+  state_dir_ = home_directory() + "/.ravbot";
   pid_file_ = state_dir_ + "/gateway.pid";
   log_file_ = state_dir_ + "/logs/gateway.log";
   std::filesystem::create_directories(state_dir_ + "/logs");
@@ -173,9 +173,9 @@ ServiceManager::ServiceManager(std::shared_ptr<spdlog::logger> logger)
 
 std::string ServiceManager::service_path() const {
 #ifdef __APPLE__
-  return home_directory() + "/Library/LaunchAgents/com.quantclaw.gateway.plist";
+  return home_directory() + "/Library/LaunchAgents/com.ravbot.gateway.plist";
 #else
-  return home_directory() + "/.config/systemd/user/quantclaw-gateway.service";
+  return home_directory() + "/.config/systemd/user/ravbot-gateway.service";
 #endif
 }
 
@@ -222,7 +222,7 @@ int ServiceManager::install(int port) {
       << "    <string>" << xml_escape(home_directory()) << "</string>\n"
       << "    <key>PATH</key>\n"
       << "    <string>" << xml_escape(kDefaultLaunchdPath) << "</string>\n"
-      << "    <key>QUANTCLAW_LOG_LEVEL</key>\n"
+      << "    <key>RAVBOT_LOG_LEVEL</key>\n"
       << "    <string>info</string>\n"
       << "  </dict>\n"
       << "</dict>\n"
@@ -241,7 +241,7 @@ int ServiceManager::install(int port) {
   return 0;
 #else
   out << "[Unit]\n"
-      << "Description=QuantClaw Gateway\n"
+      << "Description=RavBot Gateway\n"
       << "After=network.target\n\n"
       << "[Service]\n"
       << "Type=simple\n"
@@ -251,7 +251,7 @@ int ServiceManager::install(int port) {
       << "RestartSec=5\n"
       << "StandardOutput=append:" << log_file_ << "\n"
       << "StandardError=append:" << log_file_ << "\n"
-      << "Environment=QUANTCLAW_LOG_LEVEL=info\n\n"
+      << "Environment=RAVBOT_LOG_LEVEL=info\n\n"
       << "[Install]\n"
       << "WantedBy=default.target\n";
   out.flush();
@@ -476,6 +476,6 @@ void ServiceManager::remove_pid() {
   std::filesystem::remove(pid_file_);
 }
 
-}  // namespace quantclaw::platform
+}  // namespace ravbot::platform
 
 #endif  // !_WIN32

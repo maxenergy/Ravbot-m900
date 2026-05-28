@@ -1,11 +1,11 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/temporal_decay.hpp"
+#include "ravbot/core/temporal_decay.hpp"
 
 #include <cmath>
 
-namespace quantclaw {
+namespace ravbot {
 
 TemporalDecay::TemporalDecay(double half_life_days)
     : half_life_days_(half_life_days > 0 ? half_life_days : 30.0),
@@ -40,4 +40,4 @@ double TemporalDecay::Score(const std::filesystem::path& filepath) const {
   return Score(mtime_sys);
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

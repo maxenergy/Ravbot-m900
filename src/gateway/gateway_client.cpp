@@ -1,12 +1,12 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/gateway/gateway_client.hpp"
+#include "ravbot/gateway/gateway_client.hpp"
 
 #include <chrono>
 #include <sstream>
 
-namespace quantclaw::gateway {
+namespace ravbot::gateway {
 
 GatewayClient::GatewayClient(const std::string& url, const std::string& token,
                              std::shared_ptr<spdlog::logger> logger)
@@ -195,7 +195,7 @@ void GatewayClient::handle_frame(const nlohmann::json& frame) {
       hello.method = methods::kConnectHello;
       hello.params = {{"minProtocol", 1},
                       {"maxProtocol", 3},
-                      {"clientName", "quantclaw-cli"},
+                      {"clientName", "ravbot-cli"},
                       {"clientVersion", "0.2.0"},
                       {"role", "operator"},
                       {"scopes", {"operator.read", "operator.write"}},
@@ -256,4 +256,4 @@ std::string GatewayClient::next_request_id() {
   return std::to_string(++request_counter_);
 }
 
-}  // namespace quantclaw::gateway
+}  // namespace ravbot::gateway

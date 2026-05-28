@@ -1,11 +1,11 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/providers/cooldown_tracker.hpp"
+#include "ravbot/providers/cooldown_tracker.hpp"
 
 #include <algorithm>
 
-namespace quantclaw {
+namespace ravbot {
 
 bool CooldownTracker::IsInCooldown(const std::string& key) const {
   std::lock_guard<std::mutex> lock(mu_);
@@ -164,4 +164,4 @@ std::chrono::seconds CooldownTracker::ComputeCooldown(ProviderErrorKind kind,
   return std::chrono::seconds(cooldown);
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

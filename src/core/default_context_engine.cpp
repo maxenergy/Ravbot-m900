@@ -1,12 +1,12 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/default_context_engine.hpp"
+#include "ravbot/core/default_context_engine.hpp"
 
-#include "quantclaw/constants.hpp"
-#include "quantclaw/core/context_pruner.hpp"
+#include "ravbot/constants.hpp"
+#include "ravbot/core/context_pruner.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 DefaultContextEngine::DefaultContextEngine(
     const AgentConfig& config, std::shared_ptr<spdlog::logger> logger)
@@ -140,4 +140,4 @@ DefaultContextEngine::CompactOverflow(const std::vector<Message>& messages,
   return compacted;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

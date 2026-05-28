@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <cstdio>
@@ -8,14 +8,14 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/cli/agent_commands.hpp"
-#include "quantclaw/cli/cli_manager.hpp"
-#include "quantclaw/cli/gateway_commands.hpp"
-#include "quantclaw/cli/session_commands.hpp"
+#include "ravbot/cli/agent_commands.hpp"
+#include "ravbot/cli/cli_manager.hpp"
+#include "ravbot/cli/gateway_commands.hpp"
+#include "ravbot/cli/session_commands.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace quantclaw::cli;
+using namespace ravbot::cli;
 
 // Helper: convert vector<string> to argc/argv suitable for CLIManager::run
 struct ArgHelper {
@@ -175,25 +175,25 @@ class CLIManagerTest : public ::testing::Test {
 };
 
 TEST_F(CLIManagerTest, VersionFlag) {
-  ArgHelper args{"quantclaw", "--version"};
+  ArgHelper args{"ravbot", "--version"};
   auto output = capture_stdout([&]() {
     int ret = cli_->Run(args.argc(), args.argv());
     EXPECT_EQ(ret, 0);
   });
-  EXPECT_NE(output.find("quantclaw"), std::string::npos);
+  EXPECT_NE(output.find("ravbot"), std::string::npos);
 }
 
 TEST_F(CLIManagerTest, VersionShortFlag) {
-  ArgHelper args{"quantclaw", "-v"};
+  ArgHelper args{"ravbot", "-v"};
   auto output = capture_stdout([&]() {
     int ret = cli_->Run(args.argc(), args.argv());
     EXPECT_EQ(ret, 0);
   });
-  EXPECT_NE(output.find("quantclaw"), std::string::npos);
+  EXPECT_NE(output.find("ravbot"), std::string::npos);
 }
 
 TEST_F(CLIManagerTest, HelpFlag) {
-  ArgHelper args{"quantclaw", "--help"};
+  ArgHelper args{"ravbot", "--help"};
   auto output = capture_stdout([&]() {
     int ret = cli_->Run(args.argc(), args.argv());
     EXPECT_EQ(ret, 0);
@@ -203,7 +203,7 @@ TEST_F(CLIManagerTest, HelpFlag) {
 }
 
 TEST_F(CLIManagerTest, HelpShortFlag) {
-  ArgHelper args{"quantclaw", "-h"};
+  ArgHelper args{"ravbot", "-h"};
   auto output = capture_stdout([&]() {
     int ret = cli_->Run(args.argc(), args.argv());
     EXPECT_EQ(ret, 0);
@@ -212,7 +212,7 @@ TEST_F(CLIManagerTest, HelpShortFlag) {
 }
 
 TEST_F(CLIManagerTest, NoArgsShowsHelp) {
-  ArgHelper args{"quantclaw"};
+  ArgHelper args{"ravbot"};
   auto output = capture_stdout([&]() {
     int ret = cli_->Run(args.argc(), args.argv());
     EXPECT_EQ(ret, 1);
@@ -221,7 +221,7 @@ TEST_F(CLIManagerTest, NoArgsShowsHelp) {
 }
 
 TEST_F(CLIManagerTest, UnknownCommandReturnsError) {
-  ArgHelper args{"quantclaw", "nonexistent"};
+  ArgHelper args{"ravbot", "nonexistent"};
   auto err = capture_stderr([&]() {
     int ret = cli_->Run(args.argc(), args.argv());
     EXPECT_EQ(ret, 1);
@@ -230,19 +230,19 @@ TEST_F(CLIManagerTest, UnknownCommandReturnsError) {
 }
 
 TEST_F(CLIManagerTest, CommandDispatchByName) {
-  ArgHelper args{"quantclaw", "test"};
+  ArgHelper args{"ravbot", "test"};
   cli_->Run(args.argc(), args.argv());
   EXPECT_TRUE(handler_called_);
 }
 
 TEST_F(CLIManagerTest, CommandDispatchByAlias) {
-  ArgHelper args{"quantclaw", "t"};
+  ArgHelper args{"ravbot", "t"};
   cli_->Run(args.argc(), args.argv());
   EXPECT_TRUE(handler_called_);
 }
 
 TEST_F(CLIManagerTest, CommandReceivesSubArgs) {
-  ArgHelper args{"quantclaw", "test", "--foo", "bar"};
+  ArgHelper args{"ravbot", "test", "--foo", "bar"};
   cli_->Run(args.argc(), args.argv());
   EXPECT_TRUE(handler_called_);
   // handler gets argc-1 (argv[0]="test", argv[1]="--foo", argv[2]="bar")
@@ -257,7 +257,7 @@ TEST_F(CLIManagerTest, MultipleCommands) {
          return 42;
        }});
 
-  ArgHelper args{"quantclaw", "other"};
+  ArgHelper args{"ravbot", "other"};
   int ret = cli_->Run(args.argc(), args.argv());
   EXPECT_TRUE(second_called);
   EXPECT_EQ(ret, 42);

@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/tools/browser_tool.hpp"
+#include "ravbot/tools/browser_tool.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -14,9 +14,9 @@
 
 #include <httplib.h>
 
-#include "quantclaw/common/parse_util.hpp"
+#include "ravbot/common/parse_util.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 // --- SsrfPolicy ---
 
@@ -596,4 +596,4 @@ create_executor(std::shared_ptr<BrowserSession> session) {
 
 }  // namespace browser_tools
 
-}  // namespace quantclaw
+}  // namespace ravbot

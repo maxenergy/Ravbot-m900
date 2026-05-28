@@ -1,24 +1,24 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/prompt_builder.hpp"
+#include "ravbot/core/prompt_builder.hpp"
 
 #include <chrono>
 #include <filesystem>
 #include <iomanip>
 #include <sstream>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/core/memory_manager.hpp"
-#include "quantclaw/core/skill_loader.hpp"
-#include "quantclaw/tools/tool_registry.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/core/memory_manager.hpp"
+#include "ravbot/core/skill_loader.hpp"
+#include "ravbot/tools/tool_registry.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 PromptBuilder::PromptBuilder(std::shared_ptr<MemoryManager> memory_manager,
                              std::shared_ptr<SkillLoader> skill_loader,
                              std::shared_ptr<ToolRegistry> tool_registry,
-                             const QuantClawConfig* config)
+                             const RavBotConfig* config)
     : memory_manager_(memory_manager),
       skill_loader_(skill_loader),
       tool_registry_(tool_registry),
@@ -81,7 +81,7 @@ std::string PromptBuilder::BuildFull(const std::string& /*agent_id*/) const {
   }
 
   // Default identity fallback
-  prompt << "You are QuantClaw, a high-performance C++ personal AI assistant. "
+  prompt << "You are RavBot, a high-performance C++ personal AI assistant. "
          << "Use the available tools when needed to help the user. "
          << "Always be concise and helpful.";
 
@@ -107,7 +107,7 @@ std::string PromptBuilder::BuildMinimal(const std::string& /*agent_id*/) const {
     prompt << "\n";
   }
 
-  prompt << "You are QuantClaw, a helpful AI assistant.";
+  prompt << "You are RavBot, a helpful AI assistant.";
 
   return prompt.str();
 }
@@ -152,4 +152,4 @@ std::string PromptBuilder::get_runtime_info() const {
   return info.str();
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

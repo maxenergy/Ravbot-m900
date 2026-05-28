@@ -78,7 +78,7 @@ jobs:
 
       - name: Build image
         if: steps.dockerfile.outputs.present == 'true'
-        run: docker build -t quantclaw:hardening .
+        run: docker build -t ravbot:hardening .
 
       - name: Install Trivy
         if: steps.dockerfile.outputs.present == 'true'
@@ -92,7 +92,7 @@ jobs:
 
       - name: Run Trivy
         if: steps.dockerfile.outputs.present == 'true'
-        run: trivy image --exit-code 1 --severity CRITICAL,HIGH quantclaw:hardening
+        run: trivy image --exit-code 1 --severity CRITICAL,HIGH ravbot:hardening
 
   sbom:
     name: SBOM

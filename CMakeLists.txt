@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(quantclaw VERSION 0.3.0 LANGUAGES CXX)
+project(ravbot VERSION 0.3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,6 +23,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 option(BUILD_TESTS "Build tests" ON)
+option(M900BOX "Build RavBot for M900BOX motherboard-bound deployment" OFF)
 
 # Sanitizer options (mutually exclusive: ASAN and TSAN cannot be combined)
 option(ENABLE_ASAN "Build with AddressSanitizer + LeakSanitizer" OFF)
@@ -117,7 +118,7 @@ if(NOT httplib_FOUND)
 endif()
 
 # Source files - explicitly listed
-set(QUANTCLAW_CORE_SOURCES
+set(RAVBOT_CORE_SOURCES
     # Core
     src/core/agent_loop.cpp
     src/core/config.cpp
@@ -151,6 +152,8 @@ set(QUANTCLAW_CORE_SOURCES
     src/providers/provider_error.cpp
     src/providers/cooldown_tracker.cpp
     src/providers/failover_resolver.cpp
+    # Licensing
+    src/licensing/license_manager.cpp
     # CLI
     src/cli/cli_manager.cpp
     src/cli/commands.cpp
@@ -200,12 +203,12 @@ set(QUANTCLAW_CORE_SOURCES
 
 # Platform-specific sources (process + service abstractions)
 if(WIN32)
-    list(APPEND QUANTCLAW_CORE_SOURCES
+    list(APPEND RAVBOT_CORE_SOURCES
         src/platform/process_win32.cpp
         src/platform/service_win32.cpp
     )
 else()
-    list(APPEND QUANTCLAW_CORE_SOURCES
+    list(APPEND RAVBOT_CORE_SOURCES
         src/platform/process_unix.cpp
         src/platform/service_unix.cpp
     )
@@ -216,34 +219,39 @@ endif()
 execute_process(
     COMMAND git rev-parse --short HEAD
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE QC_GIT_COMMIT
+    OUTPUT_VARIABLE RAVBOT_GIT_COMMIT
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
 )
-if(NOT QC_GIT_COMMIT)
-    set(QC_GIT_COMMIT "unknown")
+if(NOT RAVBOT_GIT_COMMIT)
+    set(RAVBOT_GIT_COMMIT "unknown")
 endif()
-string(TIMESTAMP QC_BUILD_DATE "%Y-%m-%d")
+string(TIMESTAMP RAVBOT_BUILD_DATE "%Y-%m-%d")
 
-add_library(quantclaw_core STATIC ${QUANTCLAW_CORE_SOURCES})
+add_library(ravbot_core STATIC ${RAVBOT_CORE_SOURCES})
 
-target_include_directories(quantclaw_core
+target_include_directories(ravbot_core
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_compile_definitions(quantclaw_core PUBLIC
+target_compile_definitions(ravbot_core PUBLIC
     NOMINMAX
     _CRT_SECURE_NO_WARNINGS
-    QUANTCLAW_VERSION="${PROJECT_VERSION}"
-    QUANTCLAW_BUILD_DATE="${QC_BUILD_DATE}"
-    QUANTCLAW_GIT_COMMIT="${QC_GIT_COMMIT}"
+    RAVBOT_VERSION="${PROJECT_VERSION}"
+    RAVBOT_BUILD_DATE="${RAVBOT_BUILD_DATE}"
+    RAVBOT_GIT_COMMIT="${RAVBOT_GIT_COMMIT}"
     CPPHTTPLIB_OPENSSL_SUPPORT
 )
 
-target_link_libraries(quantclaw_core
+if(M900BOX)
+    target_compile_definitions(ravbot_core PUBLIC M900BOX)
+    message(STATUS "M900BOX motherboard validation enabled")
+endif()
+
+target_link_libraries(ravbot_core
     PUBLIC
         spdlog::spdlog
         nlohmann_json::nlohmann_json
@@ -255,33 +263,37 @@ target_link_libraries(quantclaw_core
         OpenSSL::Crypto
 )
 
-# WinSock2 and BCrypt (needed by mbedtls) required on Windows
-if(WIN32)
-    target_link_libraries(quantclaw_core PUBLIC ws2_32 bcrypt)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(ravbot_core PRIVATE ${CMAKE_DL_LIBS} anl)
 endif()
 
-add_executable(quantclaw src/main.cpp)
-target_link_libraries(quantclaw PRIVATE quantclaw_core)
-target_include_directories(quantclaw PRIVATE
+# WinSock2 and BCrypt (needed by mbedtls) required on Windows
+if(WIN32)
+    target_link_libraries(ravbot_core PUBLIC ws2_32 bcrypt)
+endif()
+
+add_executable(ravbot src/main.cpp)
+target_link_libraries(ravbot PRIVATE ravbot_core)
+target_include_directories(ravbot PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 # Compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(quantclaw_core PRIVATE -Wall -Wextra -O2)
-    target_compile_options(quantclaw PRIVATE -Wall -Wextra -O2)
+    target_compile_options(ravbot_core PRIVATE -Wall -Wextra -O2)
+    target_compile_options(ravbot PRIVATE -Wall -Wextra -O2)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_compile_options(quantclaw_core PRIVATE /W4 /Od /RTC1 /EHsc)
-        target_compile_options(quantclaw PRIVATE /W4 /Od /RTC1 /EHsc)
+        target_compile_options(ravbot_core PRIVATE /W4 /Od /RTC1 /EHsc)
+        target_compile_options(ravbot PRIVATE /W4 /Od /RTC1 /EHsc)
     else()
-        target_compile_options(quantclaw_core PRIVATE /W4 /O2 /EHsc)
-        target_compile_options(quantclaw PRIVATE /W4 /O2 /EHsc)
+        target_compile_options(ravbot_core PRIVATE /W4 /O2 /EHsc)
+        target_compile_options(ravbot PRIVATE /W4 /O2 /EHsc)
     endif()
 endif()
 
-install(TARGETS quantclaw DESTINATION bin)
+install(TARGETS ravbot DESTINATION bin)
 
 # --- Tests ---
 if(BUILD_TESTS)
@@ -358,20 +370,20 @@ if(BUILD_TESTS)
         tests/test_hybrid_memory_search.cpp
     )
 
-    add_executable(quantclaw_tests ${TEST_SOURCES})
-    target_link_libraries(quantclaw_tests PRIVATE
-        quantclaw_core
+    add_executable(ravbot_tests ${TEST_SOURCES})
+    target_link_libraries(ravbot_tests PRIVATE
+        ravbot_core
         GTest::gtest_main
     )
-    target_include_directories(quantclaw_tests PRIVATE
+    target_include_directories(ravbot_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-            target_compile_options(quantclaw_tests PRIVATE /W4 /wd4100 /Od /RTC1 /EHsc)
+            target_compile_options(ravbot_tests PRIVATE /W4 /wd4100 /Od /RTC1 /EHsc)
         else()
-            target_compile_options(quantclaw_tests PRIVATE /W4 /wd4100 /O2 /EHsc)
+            target_compile_options(ravbot_tests PRIVATE /W4 /wd4100 /O2 /EHsc)
         endif()
     endif()
 
@@ -385,11 +397,11 @@ if(BUILD_TESTS)
         # PATH value must have its semicolons escaped as \; to avoid being
         # split into separate list items.
         string(REPLACE ";" "\\;" _escaped_system_path "$ENV{PATH}")
-        gtest_discover_tests(quantclaw_tests
+        gtest_discover_tests(ravbot_tests
             DISCOVERY_MODE PRE_TEST
             PROPERTIES ENVIRONMENT "PATH=${VCPKG_DLL_DIR}\;${_escaped_system_path}"
         )
     else()
-        gtest_discover_tests(quantclaw_tests)
+        gtest_discover_tests(ravbot_tests)
     endif()
 endif()

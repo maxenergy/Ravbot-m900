@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/security/exec_approval.hpp"
+#include "ravbot/security/exec_approval.hpp"
 
 #include <gtest/gtest.h>
 
-namespace quantclaw {
+namespace ravbot {
 
 static std::shared_ptr<spdlog::logger> make_logger(const std::string& name) {
   auto null_sink = std::make_shared<spdlog::sinks::null_sink_mt>();
@@ -211,4 +211,4 @@ TEST(ExecApprovalManagerTest, DecisionToString) {
   EXPECT_EQ(ApprovalDecisionToString(ApprovalDecision::kPending), "pending");
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

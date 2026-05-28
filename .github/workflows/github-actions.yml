@@ -122,13 +122,13 @@ jobs:
         context: .
         file: scripts/Dockerfile
         push: false
-        tags: quantclaw:test
+        tags: ravbot:test
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
     - name: Test Docker image
       run: |
-        docker run --rm quantclaw:test quantclaw --version || true
+        docker run --rm ravbot:test ravbot --version || true
 
   clang-tidy:
     name: clang-tidy
@@ -157,7 +157,7 @@ jobs:
           -DCMAKE_CXX_STANDARD=17 \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
         # Ensure headers are generated (if any)
-        cmake --build build --parallel --target quantclaw 2>/dev/null || true
+        cmake --build build --parallel --target ravbot 2>/dev/null || true
 
     - name: Run clang-tidy
       run: |
@@ -236,7 +236,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: smoke-test-logs
-        path: /tmp/quantclaw-smoke-ci/
+        path: /tmp/ravbot-smoke-ci/
 
   onboard-test:
     name: Onboard Integration Test
@@ -256,7 +256,7 @@ jobs:
           gcc-11 g++-11 \
           python3
 
-    - name: Build (quantclaw binary only)
+    - name: Build (ravbot binary only)
       env:
         CC: gcc-11
         CXX: g++-11
@@ -265,17 +265,17 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_CXX_STANDARD=17 \
           -DBUILD_TESTS=OFF
-        cmake --build build --parallel --target quantclaw
+        cmake --build build --parallel --target ravbot
 
     - name: Run onboard integration tests
-      run: bash tests/test-onboard.sh build/quantclaw
+      run: bash tests/test-onboard.sh build/ravbot
 
     - name: Upload logs on failure
       if: failure()
       uses: actions/upload-artifact@v7
       with:
         name: onboard-test-logs
-        path: /tmp/quantclaw-onboard-*/
+        path: /tmp/ravbot-onboard-*/
 
   cli-test:
     name: CLI Integration Test
@@ -295,7 +295,7 @@ jobs:
           gcc-11 g++-11 \
           curl python3
 
-    - name: Build (quantclaw binary only)
+    - name: Build (ravbot binary only)
       env:
         CC: gcc-11
         CXX: g++-11
@@ -304,17 +304,17 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_CXX_STANDARD=17 \
           -DBUILD_TESTS=OFF
-        cmake --build build --parallel --target quantclaw
+        cmake --build build --parallel --target ravbot
 
     - name: Run CLI integration tests
-      run: bash tests/test-cli.sh build/quantclaw
+      run: bash tests/test-cli.sh build/ravbot
 
     - name: Upload logs on failure
       if: failure()
       uses: actions/upload-artifact@v7
       with:
         name: cli-test-logs
-        path: /tmp/quantclaw-cli-*/
+        path: /tmp/ravbot-cli-*/
 
   static-analysis:
     name: Static Analysis (cppcheck)
@@ -423,7 +423,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Restore vcpkg binary cache from resources repo (L1)
-      # Try to download pre-built packages from QuantClaw/resources release.
+      # Try to download pre-built packages from RavBot/resources release.
       # This is the fastest path: no compilation at all.
       # Falls back gracefully if the release does not exist yet.
       run: |
@@ -431,13 +431,13 @@ jobs:
         $short = $baseline.Substring(0, 8)
         $tag = "vcpkg-windows-x64-$short"
         $asset = "vcpkg-bincache-windows-x64.tar.gz"
-        $url = "https://github.com/QuantClaw/resources/releases/download/$tag/$asset"
+        $url = "https://github.com/RavBot/resources/releases/download/$tag/$asset"
         Write-Host "Trying to download pre-built cache from: $url"
         try {
           Invoke-WebRequest -Uri $url -OutFile $asset -ErrorAction Stop
           New-Item -ItemType Directory -Force -Path vcpkg-bincache | Out-Null
           tar -xzf $asset
-          Write-Host "Pre-built vcpkg cache restored from QuantClaw/resources."
+          Write-Host "Pre-built vcpkg cache restored from RavBot/resources."
           echo "VCPKG_CACHE_HIT=1" >> $env:GITHUB_ENV
         } catch {
           Write-Host "Pre-built cache not available ($($_.Exception.Message)), will compile from source."

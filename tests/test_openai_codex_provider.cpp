@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <atomic>
@@ -10,14 +10,14 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/auth/openai_codex_auth.hpp"
-#include "quantclaw/providers/openai_codex_provider.hpp"
-#include "quantclaw/providers/provider_error.hpp"
+#include "ravbot/auth/openai_codex_auth.hpp"
+#include "ravbot/providers/openai_codex_provider.hpp"
+#include "ravbot/providers/provider_error.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
 
-namespace quantclaw {
+namespace ravbot {
 namespace {
 
 std::shared_ptr<spdlog::logger> make_logger(const std::string& name) {
@@ -359,4 +359,4 @@ TEST(OpenAICodexProviderTest,
   server_thread.join();
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

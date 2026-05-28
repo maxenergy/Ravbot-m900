@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <cstdlib>
@@ -21,18 +21,18 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/gateway/daemon_manager.hpp"
+#include "ravbot/gateway/daemon_manager.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
 
-using namespace quantclaw::gateway;
+using namespace ravbot::gateway;
 
 class DaemonManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // Use a temp directory as HOME so we don't touch the real system
-    test_home_ = quantclaw::test::MakeTestDir("quantclaw_daemon_test");
+    test_home_ = ravbot::test::MakeTestDir("ravbot_daemon_test");
 
     // Save original values (empty string means the variable was unset)
     auto get_or_empty = [](const char* name) -> std::string {
@@ -96,7 +96,7 @@ class DaemonManagerTest : public ::testing::Test {
 
   // Write a PID file directly for testing
   void write_pid_file(int pid) {
-    auto pid_path = test_home_ / ".quantclaw" / "gateway.pid";
+    auto pid_path = test_home_ / ".ravbot" / "gateway.pid";
     std::filesystem::create_directories(pid_path.parent_path());
     std::ofstream f(pid_path);
     f << pid;
@@ -186,13 +186,13 @@ class DaemonManagerTest : public ::testing::Test {
 
   std::filesystem::path expected_service_path() const {
 #ifdef _WIN32
-    return test_home_ / ".quantclaw" / "gateway.service.json";
+    return test_home_ / ".ravbot" / "gateway.service.json";
 #elif defined(__APPLE__)
     return test_home_ / "Library" / "LaunchAgents" /
-           "com.quantclaw.gateway.plist";
+           "com.ravbot.gateway.plist";
 #else
     return test_home_ / ".config" / "systemd" / "user" /
-           "quantclaw-gateway.service";
+           "ravbot-gateway.service";
 #endif
   }
 
@@ -209,14 +209,14 @@ class DaemonManagerTest : public ::testing::Test {
 // --- Constructor ---
 
 TEST_F(DaemonManagerTest, ConstructorCreatesDirectories) {
-  auto logs_dir = test_home_ / ".quantclaw" / "logs";
+  auto logs_dir = test_home_ / ".ravbot" / "logs";
   EXPECT_TRUE(std::filesystem::exists(logs_dir));
   EXPECT_TRUE(std::filesystem::is_directory(logs_dir));
 }
 
-TEST_F(DaemonManagerTest, ConstructorCreatesQuantclawDir) {
-  auto qc_dir = test_home_ / ".quantclaw";
-  EXPECT_TRUE(std::filesystem::exists(qc_dir));
+TEST_F(DaemonManagerTest, ConstructorCreatesRavbotDir) {
+  auto ravbot_dir = test_home_ / ".ravbot";
+  EXPECT_TRUE(std::filesystem::exists(ravbot_dir));
 }
 
 // --- get_pid ---
@@ -231,7 +231,7 @@ TEST_F(DaemonManagerTest, GetPidValidPidFile) {
 }
 
 TEST_F(DaemonManagerTest, GetPidEmptyFile) {
-  auto pid_path = test_home_ / ".quantclaw" / "gateway.pid";
+  auto pid_path = test_home_ / ".ravbot" / "gateway.pid";
   std::ofstream f(pid_path);
   f << "";
   f.close();
@@ -240,7 +240,7 @@ TEST_F(DaemonManagerTest, GetPidEmptyFile) {
 }
 
 TEST_F(DaemonManagerTest, GetPidInvalidContent) {
-  auto pid_path = test_home_ / ".quantclaw" / "gateway.pid";
+  auto pid_path = test_home_ / ".ravbot" / "gateway.pid";
   std::ofstream f(pid_path);
   f << "not_a_number";
   f.close();
@@ -305,7 +305,7 @@ TEST_F(DaemonManagerTest, InstallWritesPlatformServiceDefinition) {
                        std::istreambuf_iterator<char>());
 
 #ifdef __APPLE__
-  EXPECT_NE(contents.find("com.quantclaw.gateway"), std::string::npos);
+  EXPECT_NE(contents.find("com.ravbot.gateway"), std::string::npos);
   EXPECT_NE(contents.find("<key>ProgramArguments</key>"), std::string::npos);
   EXPECT_NE(contents.find("<string>gateway</string>"), std::string::npos);
   EXPECT_NE(contents.find("<string>19001</string>"), std::string::npos);

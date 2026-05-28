@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <cmath>
@@ -8,15 +8,15 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/core/memory_search.hpp"
-#include "quantclaw/core/mmr_reranker.hpp"
-#include "quantclaw/core/temporal_decay.hpp"
-#include "quantclaw/core/vector_index.hpp"
-#include "quantclaw/providers/embedding_provider.hpp"
+#include "ravbot/core/memory_search.hpp"
+#include "ravbot/core/mmr_reranker.hpp"
+#include "ravbot/core/temporal_decay.hpp"
+#include "ravbot/core/vector_index.hpp"
+#include "ravbot/providers/embedding_provider.hpp"
 
 #include <gtest/gtest.h>
 
-namespace quantclaw {
+namespace ravbot {
 
 // ================================================================
 // Mock Embedding Provider
@@ -218,7 +218,7 @@ class HybridSearchTest : public ::testing::Test {
     // Create unique temp directory per test instance
     tmp_dir_ =
         std::filesystem::temp_directory_path() /
-        ("qc_hybrid_test_" +
+        ("ravbot_hybrid_test_" +
          std::to_string(
              std::chrono::steady_clock::now().time_since_epoch().count()));
     std::filesystem::create_directories(tmp_dir_);
@@ -332,4 +332,4 @@ TEST_F(HybridSearchTest, ClearResetsAll) {
   EXPECT_EQ(stats["indexed_entries"].get<int>(), 0);
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

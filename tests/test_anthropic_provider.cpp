@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <memory>
@@ -6,26 +6,26 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/providers/anthropic_provider.hpp"
-#include "quantclaw/providers/llm_provider.hpp"
+#include "ravbot/providers/anthropic_provider.hpp"
+#include "ravbot/providers/llm_provider.hpp"
 
 #include <gtest/gtest.h>
 
 // Mock AnthropicProvider for testing without actual API calls
-class MockAnthropicProvider : public quantclaw::AnthropicProvider {
+class MockAnthropicProvider : public ravbot::AnthropicProvider {
  public:
   MockAnthropicProvider(std::shared_ptr<spdlog::logger> logger)
       : AnthropicProvider("test-key", "https://api.anthropic.com", 30, logger) {
   }
 
   // Configurable response
-  quantclaw::ChatCompletionResponse next_response;
+  ravbot::ChatCompletionResponse next_response;
 
-  quantclaw::ChatCompletionResponse
-  ChatCompletion(const quantclaw::ChatCompletionRequest& request) override {
+  ravbot::ChatCompletionResponse
+  ChatCompletion(const ravbot::ChatCompletionRequest& request) override {
     last_request = request;
     if (next_response.content.empty() && next_response.tool_calls.empty()) {
-      quantclaw::ChatCompletionResponse response;
+      ravbot::ChatCompletionResponse response;
       response.content = "Mock response for: " + request.messages.back().text();
       response.finish_reason = "stop";
       return response;
@@ -34,14 +34,14 @@ class MockAnthropicProvider : public quantclaw::AnthropicProvider {
   }
 
   // Stream emits multiple chunks
-  std::vector<quantclaw::ChatCompletionResponse> stream_chunks;
+  std::vector<ravbot::ChatCompletionResponse> stream_chunks;
 
   void ChatCompletionStream(
-      const quantclaw::ChatCompletionRequest& /*request*/,
-      std::function<void(const quantclaw::ChatCompletionResponse&)> callback)
+      const ravbot::ChatCompletionRequest& /*request*/,
+      std::function<void(const ravbot::ChatCompletionResponse&)> callback)
       override {
     if (stream_chunks.empty()) {
-      quantclaw::ChatCompletionResponse response;
+      ravbot::ChatCompletionResponse response;
       response.content = "Streamed mock";
       response.is_stream_end = true;
       callback(response);
@@ -52,7 +52,7 @@ class MockAnthropicProvider : public quantclaw::AnthropicProvider {
     }
   }
 
-  quantclaw::ChatCompletionRequest last_request;
+  ravbot::ChatCompletionRequest last_request;
 };
 
 class AnthropicProviderTest : public ::testing::Test {
@@ -71,15 +71,15 @@ class AnthropicProviderTest : public ::testing::Test {
 // --- Basic tests ---
 
 TEST_F(AnthropicProviderTest, ChatCompletion) {
-  quantclaw::ChatCompletionRequest request;
-  request.messages.push_back({"user", "Hello, QuantClaw!"});
+  ravbot::ChatCompletionRequest request;
+  request.messages.push_back({"user", "Hello, RavBot!"});
   request.model = "claude-sonnet-4-6";
   request.temperature = 0.7;
   request.max_tokens = 4096;
 
   auto response = provider_->ChatCompletion(request);
 
-  EXPECT_EQ(response.content, "Mock response for: Hello, QuantClaw!");
+  EXPECT_EQ(response.content, "Mock response for: Hello, RavBot!");
   EXPECT_EQ(response.finish_reason, "stop");
 }
 
@@ -99,12 +99,12 @@ TEST_F(AnthropicProviderTest, SupportedModels) {
 }
 
 TEST_F(AnthropicProviderTest, StreamingCompletion) {
-  quantclaw::ChatCompletionRequest request;
+  ravbot::ChatCompletionRequest request;
   request.messages.push_back({"user", "Hello"});
 
   bool called = false;
   provider_->ChatCompletionStream(
-      request, [&called](const quantclaw::ChatCompletionResponse& resp) {
+      request, [&called](const ravbot::ChatCompletionResponse& resp) {
         called = true;
         EXPECT_TRUE(resp.is_stream_end);
       });
@@ -115,7 +115,7 @@ TEST_F(AnthropicProviderTest, StreamingCompletion) {
 // --- Mock captures request ---
 
 TEST_F(AnthropicProviderTest, ChatCompletionPassesModel) {
-  quantclaw::ChatCompletionRequest request;
+  ravbot::ChatCompletionRequest request;
   request.messages.push_back({"user", "test"});
   request.model = "claude-opus-4-6";
   request.temperature = 0.5;
@@ -129,7 +129,7 @@ TEST_F(AnthropicProviderTest, ChatCompletionPassesModel) {
 }
 
 TEST_F(AnthropicProviderTest, ChatCompletionMultipleMessages) {
-  quantclaw::ChatCompletionRequest request;
+  ravbot::ChatCompletionRequest request;
   request.messages.push_back({"system", "You are helpful."});
   request.messages.push_back({"user", "First message"});
   request.messages.push_back({"assistant", "First reply"});
@@ -145,13 +145,13 @@ TEST_F(AnthropicProviderTest, ChatCompletionMultipleMessages) {
 
 TEST_F(AnthropicProviderTest, ResponseWithToolCalls) {
   provider_->next_response.finish_reason = "tool_calls";
-  quantclaw::ToolCall tc;
+  ravbot::ToolCall tc;
   tc.id = "toolu_abc";
   tc.name = "exec";
   tc.arguments = {{"command", "ls"}};
   provider_->next_response.tool_calls.push_back(tc);
 
-  quantclaw::ChatCompletionRequest request;
+  ravbot::ChatCompletionRequest request;
   request.messages.push_back({"user", "List files"});
 
   auto response = provider_->ChatCompletion(request);
@@ -171,7 +171,7 @@ TEST_F(AnthropicProviderTest, StreamingMultipleChunks) {
       {/*.content=*/"", {}, "", true}  // stream end
   };
 
-  quantclaw::ChatCompletionRequest request;
+  ravbot::ChatCompletionRequest request;
   request.messages.push_back({"user", "test"});
   request.stream = true;
 
@@ -179,7 +179,7 @@ TEST_F(AnthropicProviderTest, StreamingMultipleChunks) {
   bool saw_end = false;
 
   provider_->ChatCompletionStream(
-      request, [&](const quantclaw::ChatCompletionResponse& resp) {
+      request, [&](const ravbot::ChatCompletionResponse& resp) {
         accumulated += resp.content;
         if (resp.is_stream_end)
           saw_end = true;
@@ -193,12 +193,12 @@ TEST_F(AnthropicProviderTest, StreamingMultipleChunks) {
 
 TEST_F(AnthropicProviderTest, ConstructionWithEmptyBaseUrl) {
   EXPECT_NO_THROW(
-      { quantclaw::AnthropicProvider provider("key", "", 10, logger_); });
+      { ravbot::AnthropicProvider provider("key", "", 10, logger_); });
 }
 
 TEST_F(AnthropicProviderTest, ConstructionWithCustomBaseUrl) {
   EXPECT_NO_THROW({
-    quantclaw::AnthropicProvider provider("key", "https://custom.anthropic.com",
+    ravbot::AnthropicProvider provider("key", "https://custom.anthropic.com",
                                           30, logger_);
   });
 }

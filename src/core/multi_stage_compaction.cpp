@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/multi_stage_compaction.hpp"
+#include "ravbot/core/multi_stage_compaction.hpp"
 
 #include <algorithm>
 #include <cmath>
 
-#include "quantclaw/core/context_pruner.hpp"
+#include "ravbot/core/context_pruner.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 MultiStageCompaction::MultiStageCompaction(
     std::shared_ptr<spdlog::logger> logger)
@@ -182,4 +182,4 @@ MultiStageCompaction::CompactMultiStage(const std::vector<Message>& messages,
   return result;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

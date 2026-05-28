@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #ifdef _WIN32
@@ -27,11 +27,11 @@ static constexpr socket_t kInvalidSocket = -1;
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/mcp/mcp_client.hpp"
+#include "ravbot/mcp/mcp_client.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace quantclaw::mcp;
+using namespace ravbot::mcp;
 
 #ifdef _WIN32
 // RAII struct to initialise/cleanup Winsock for the test process

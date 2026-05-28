@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <atomic>
@@ -17,18 +17,18 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/common/defer.hpp"
-#include "quantclaw/config.hpp"
-#include "quantclaw/plugins/hook_manager.hpp"
-#include "quantclaw/plugins/plugin_manifest.hpp"
-#include "quantclaw/plugins/plugin_registry.hpp"
-#include "quantclaw/plugins/plugin_system.hpp"
+#include "ravbot/common/defer.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/plugins/hook_manager.hpp"
+#include "ravbot/plugins/plugin_manifest.hpp"
+#include "ravbot/plugins/plugin_registry.hpp"
+#include "ravbot/plugins/plugin_system.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
 
 // Windows SDK defines StartService/StopService as macros; undefine them
-// to allow calling quantclaw::PluginSystem::StartService/StopService.
+// to allow calling ravbot::PluginSystem::StartService/StopService.
 #ifdef StartService
 #undef StartService
 #endif
@@ -47,7 +47,7 @@ make_null_logger(const std::string& name) {
 class PluginManifestTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_test_plugins");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_test_plugins");
   }
 
   void TearDown() override {
@@ -71,7 +71,7 @@ class PluginManifestTest : public ::testing::Test {
 
 TEST_F(PluginManifestTest, ParseMinimalManifest) {
   nlohmann::json j = {{"id", "test-plugin"}};
-  auto m = quantclaw::PluginManifest::Parse(j);
+  auto m = ravbot::PluginManifest::Parse(j);
   EXPECT_EQ(m.id, "test-plugin");
   EXPECT_EQ(m.name, "test-plugin");  // defaults to id
   EXPECT_TRUE(m.description.empty());
@@ -94,7 +94,7 @@ TEST_F(PluginManifestTest, ParseFullManifest) {
       {"skills", {"discord-status", "discord-send"}},
       {"configSchema", {{"type", "object"}}},
   };
-  auto m = quantclaw::PluginManifest::Parse(j);
+  auto m = ravbot::PluginManifest::Parse(j);
   EXPECT_EQ(m.id, "discord");
   EXPECT_EQ(m.name, "Discord Channel");
   EXPECT_EQ(m.description, "Discord integration");
@@ -110,7 +110,7 @@ TEST_F(PluginManifestTest, ParseFullManifest) {
 
 TEST_F(PluginManifestTest, ParseMissingIdThrows) {
   nlohmann::json j = {{"name", "no-id"}};
-  EXPECT_THROW(quantclaw::PluginManifest::Parse(j), std::runtime_error);
+  EXPECT_THROW(ravbot::PluginManifest::Parse(j), std::runtime_error);
 }
 
 TEST_F(PluginManifestTest, LoadFromFile) {
@@ -120,14 +120,14 @@ TEST_F(PluginManifestTest, LoadFromFile) {
       {"version", "0.1.0"},
   };
   auto path = write_manifest("file-test", manifest);
-  auto m = quantclaw::PluginManifest::LoadFromFile(path);
+  auto m = ravbot::PluginManifest::LoadFromFile(path);
   EXPECT_EQ(m.id, "file-test");
   EXPECT_EQ(m.name, "File Test Plugin");
 }
 
 TEST_F(PluginManifestTest, LoadFromNonexistentFileThrows) {
   EXPECT_THROW(
-      quantclaw::PluginManifest::LoadFromFile("/nonexistent/path.json"),
+      ravbot::PluginManifest::LoadFromFile("/nonexistent/path.json"),
       std::runtime_error);
 }
 
@@ -140,7 +140,7 @@ TEST_F(PluginManifestTest, ToJsonRoundTrip) {
       {"channels", {"ch1", "ch2"}},
       {"configSchema", {{"type", "object"}}},
   };
-  auto m = quantclaw::PluginManifest::Parse(j);
+  auto m = ravbot::PluginManifest::Parse(j);
   auto out = m.ToJson();
   EXPECT_EQ(out["id"], "roundtrip");
   EXPECT_EQ(out["name"], "Roundtrip Test");
@@ -162,7 +162,7 @@ TEST_F(PluginManifestTest, ParseUiHints) {
             }},
        }},
   };
-  auto m = quantclaw::PluginManifest::Parse(j);
+  auto m = ravbot::PluginManifest::Parse(j);
   ASSERT_EQ(m.ui_hints.size(), 1);
   ASSERT_TRUE(m.ui_hints.count("apiKey"));
   EXPECT_EQ(m.ui_hints.at("apiKey").label, "API Key");
@@ -187,14 +187,14 @@ class PluginRegistryTest : public PluginManifestTest {
 };
 
 TEST_F(PluginRegistryTest, DiscoverEmptyDirectory) {
-  quantclaw::PluginRegistry reg(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginRegistry reg(logger_);
+  ravbot::RavBotConfig config;
   reg.Discover(config, test_dir_);
   EXPECT_TRUE(reg.Plugins().empty());
 }
 
 TEST_F(PluginRegistryTest, DiscoverGlobalPluginsFromPlatformHome) {
-  auto test_home = quantclaw::test::MakeTestDir("quantclaw_plugin_home_test");
+  auto test_home = ravbot::test::MakeTestDir("ravbot_plugin_home_test");
   auto get_or_empty = [](const char* name) -> std::string {
     const char* value = std::getenv(name);
     return value ? value : "";
@@ -232,15 +232,15 @@ TEST_F(PluginRegistryTest, DiscoverGlobalPluginsFromPlatformHome) {
 
   DEFER(cleanup());
 
-  auto plugin_dir = test_home / ".quantclaw" / "plugins" / "global-plugin";
+  auto plugin_dir = test_home / ".ravbot" / "plugins" / "global-plugin";
   fs::create_directories(plugin_dir);
   {
     std::ofstream ofs(plugin_dir / "openclaw.plugin.json");
     ofs << R"({"id":"global-plugin","name":"Global Plugin"})";
   }
 
-  quantclaw::PluginRegistry reg(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginRegistry reg(logger_);
+  ravbot::RavBotConfig config;
   reg.Discover(config, test_dir_);
 
   EXPECT_NE(reg.Find("global-plugin"), nullptr);
@@ -261,12 +261,12 @@ TEST_F(PluginRegistryTest, DiscoverPluginsFromConfigPaths) {
     ofs << R"({"id": "plugin-b", "channels": ["telegram"]})";
   }
 
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {
       {"load", {{"paths", {plugins_dir.string()}}}},
   };
 
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
   reg.Discover(config, test_dir_);
 
   EXPECT_EQ(reg.Plugins().size(), 2);
@@ -291,13 +291,13 @@ TEST_F(PluginRegistryTest, EnableDisableLogic) {
     ofs << R"({"id": "disabled-one"})";
   }
 
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {
       {"load", {{"paths", {plugins_dir.string()}}}},
       {"deny", {"disabled-one"}},
   };
 
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
   reg.Discover(config, test_dir_);
 
   EXPECT_TRUE(reg.IsEnabled("enabled-one"));
@@ -318,13 +318,13 @@ TEST_F(PluginRegistryTest, AllowListRestrictsPlugins) {
     ofs << R"({"id": "not-allowed"})";
   }
 
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {
       {"load", {{"paths", {plugins_dir.string()}}}},
       {"allow", {"allowed"}},
   };
 
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
   reg.Discover(config, test_dir_);
 
   EXPECT_TRUE(reg.IsEnabled("allowed"));
@@ -339,10 +339,10 @@ TEST_F(PluginRegistryTest, ToJsonIncludesAllFields) {
     ofs << R"({"id":"json-test","name":"JSON Test","version":"1.0","channels":["ch"]})";
   }
 
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {{"load", {{"paths", {plugins_dir.string()}}}}};
 
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
   reg.Discover(config, test_dir_);
 
   auto j = reg.ToJson();
@@ -353,21 +353,21 @@ TEST_F(PluginRegistryTest, ToJsonIncludesAllFields) {
   EXPECT_EQ(j[0]["status"], "loaded");
 }
 
-TEST_F(PluginRegistryTest, QuantclawManifestAlsoDiscovered) {
+TEST_F(PluginRegistryTest, RavbotManifestAlsoDiscovered) {
   auto plugins_dir = test_dir_ / "plugins";
-  fs::create_directories(plugins_dir / "qc-plugin");
+  fs::create_directories(plugins_dir / "ravbot-plugin");
   {
-    std::ofstream ofs(plugins_dir / "qc-plugin" / "quantclaw.plugin.json");
-    ofs << R"({"id": "qc-plugin"})";
+    std::ofstream ofs(plugins_dir / "ravbot-plugin" / "ravbot.plugin.json");
+    ofs << R"({"id": "ravbot-plugin"})";
   }
 
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {{"load", {{"paths", {plugins_dir.string()}}}}};
 
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
   reg.Discover(config, test_dir_);
 
-  EXPECT_TRUE(reg.Find("qc-plugin") != nullptr);
+  EXPECT_TRUE(reg.Find("ravbot-plugin") != nullptr);
 }
 
 TEST_F(PluginRegistryTest, GlobalDisable) {
@@ -378,13 +378,13 @@ TEST_F(PluginRegistryTest, GlobalDisable) {
     ofs << R"({"id": "some-plugin"})";
   }
 
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {
       {"enabled", false},
       {"load", {{"paths", {plugins_dir.string()}}}},
   };
 
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
   reg.Discover(config, test_dir_);
 
   EXPECT_FALSE(reg.IsEnabled("some-plugin"));
@@ -398,13 +398,13 @@ TEST_F(PluginRegistryTest, PluginConfigPassthrough) {
     ofs << R"({"id": "cfg-plugin"})";
   }
 
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {
       {"load", {{"paths", {plugins_dir.string()}}}},
       {"entries", {{"cfg-plugin", {{"config", {{"key", "value"}}}}}}},
   };
 
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
   reg.Discover(config, test_dir_);
 
   auto* rec = reg.Find("cfg-plugin");
@@ -428,7 +428,7 @@ class HookManagerTest : public ::testing::Test {
 };
 
 TEST_F(HookManagerTest, RegisterAndFire) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   bool called = false;
   // Use a modifying hook so results are returned
@@ -444,7 +444,7 @@ TEST_F(HookManagerTest, RegisterAndFire) {
 }
 
 TEST_F(HookManagerTest, PriorityOrdering) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   // Use a modifying hook so handlers execute sequentially in priority order
   std::vector<int> order;
@@ -480,7 +480,7 @@ TEST_F(HookManagerTest, PriorityOrdering) {
 }
 
 TEST_F(HookManagerTest, MergedResults) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   // Use a modifying hook so results are merged
   hooks.RegisterHook("before_agent_start", "p1",
@@ -498,13 +498,13 @@ TEST_F(HookManagerTest, MergedResults) {
 }
 
 TEST_F(HookManagerTest, UnregisteredHookReturnsEmpty) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
   auto result = hooks.Fire("nonexistent", {});
   EXPECT_TRUE(result.empty());
 }
 
 TEST_F(HookManagerTest, HandlerExceptionDoesNotCrash) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   // Use a modifying hook so results are returned
   hooks.RegisterHook("message_sending", "bad",
@@ -521,7 +521,7 @@ TEST_F(HookManagerTest, HandlerExceptionDoesNotCrash) {
 }
 
 TEST_F(HookManagerTest, HandlerCount) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
   EXPECT_EQ(hooks.HandlerCount("test"), 0);
 
   hooks.RegisterHook("test", "a",
@@ -532,7 +532,7 @@ TEST_F(HookManagerTest, HandlerCount) {
 }
 
 TEST_F(HookManagerTest, RegisteredHooksList) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
   hooks.RegisterHook("hook_a", "p",
                      [](const nlohmann::json&) { return nlohmann::json{}; });
   hooks.RegisterHook("hook_b", "p",
@@ -548,49 +548,49 @@ TEST_F(HookManagerTest, RegisteredHooksList) {
 // --- HookMode classification tests ---
 
 TEST(HookModeTest, ModifyingHooks) {
-  EXPECT_EQ(quantclaw::GetHookMode("before_model_resolve"),
-            quantclaw::HookMode::kModifying);
-  EXPECT_EQ(quantclaw::GetHookMode("before_prompt_build"),
-            quantclaw::HookMode::kModifying);
-  EXPECT_EQ(quantclaw::GetHookMode("before_agent_start"),
-            quantclaw::HookMode::kModifying);
-  EXPECT_EQ(quantclaw::GetHookMode("message_sending"),
-            quantclaw::HookMode::kModifying);
-  EXPECT_EQ(quantclaw::GetHookMode("before_tool_call"),
-            quantclaw::HookMode::kModifying);
-  EXPECT_EQ(quantclaw::GetHookMode("subagent_spawning"),
-            quantclaw::HookMode::kModifying);
-  EXPECT_EQ(quantclaw::GetHookMode("subagent_delivery_target"),
-            quantclaw::HookMode::kModifying);
+  EXPECT_EQ(ravbot::GetHookMode("before_model_resolve"),
+            ravbot::HookMode::kModifying);
+  EXPECT_EQ(ravbot::GetHookMode("before_prompt_build"),
+            ravbot::HookMode::kModifying);
+  EXPECT_EQ(ravbot::GetHookMode("before_agent_start"),
+            ravbot::HookMode::kModifying);
+  EXPECT_EQ(ravbot::GetHookMode("message_sending"),
+            ravbot::HookMode::kModifying);
+  EXPECT_EQ(ravbot::GetHookMode("before_tool_call"),
+            ravbot::HookMode::kModifying);
+  EXPECT_EQ(ravbot::GetHookMode("subagent_spawning"),
+            ravbot::HookMode::kModifying);
+  EXPECT_EQ(ravbot::GetHookMode("subagent_delivery_target"),
+            ravbot::HookMode::kModifying);
 }
 
 TEST(HookModeTest, SyncHooks) {
-  EXPECT_EQ(quantclaw::GetHookMode("tool_result_persist"),
-            quantclaw::HookMode::kSync);
-  EXPECT_EQ(quantclaw::GetHookMode("before_message_write"),
-            quantclaw::HookMode::kSync);
+  EXPECT_EQ(ravbot::GetHookMode("tool_result_persist"),
+            ravbot::HookMode::kSync);
+  EXPECT_EQ(ravbot::GetHookMode("before_message_write"),
+            ravbot::HookMode::kSync);
 }
 
 TEST(HookModeTest, VoidHooks) {
-  EXPECT_EQ(quantclaw::GetHookMode("llm_input"), quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("llm_output"), quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("agent_end"), quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("message_received"),
-            quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("message_sent"), quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("after_tool_call"),
-            quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("session_start"),
-            quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("session_end"), quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("gateway_start"),
-            quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("gateway_stop"), quantclaw::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("llm_input"), ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("llm_output"), ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("agent_end"), ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("message_received"),
+            ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("message_sent"), ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("after_tool_call"),
+            ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("session_start"),
+            ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("session_end"), ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("gateway_start"),
+            ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("gateway_stop"), ravbot::HookMode::kVoid);
 }
 
 TEST(HookModeTest, UnknownHookDefaultsToVoid) {
-  EXPECT_EQ(quantclaw::GetHookMode("some_future_hook"),
-            quantclaw::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("some_future_hook"),
+            ravbot::HookMode::kVoid);
 }
 
 TEST(HookModeTest, AllTwentyFourHooksClassified) {
@@ -610,16 +610,16 @@ TEST(HookModeTest, AllTwentyFourHooksClassified) {
   };
 
   for (const auto& hook : all_hooks) {
-    auto mode = quantclaw::GetHookMode(hook);
-    EXPECT_TRUE(mode == quantclaw::HookMode::kVoid ||
-                mode == quantclaw::HookMode::kModifying ||
-                mode == quantclaw::HookMode::kSync)
+    auto mode = ravbot::GetHookMode(hook);
+    EXPECT_TRUE(mode == ravbot::HookMode::kVoid ||
+                mode == ravbot::HookMode::kModifying ||
+                mode == ravbot::HookMode::kSync)
         << "Hook '" << hook << "' has unexpected mode";
   }
 }
 
 TEST_F(HookManagerTest, VoidHooksRunInParallel) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   std::atomic<int> count{0};
   for (int i = 0; i < 3; ++i) {
@@ -637,7 +637,7 @@ TEST_F(HookManagerTest, VoidHooksRunInParallel) {
 }
 
 TEST_F(HookManagerTest, ModifyingHooksMergeResults) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   hooks.RegisterHook(
       "before_model_resolve", "p1",
@@ -658,7 +658,7 @@ TEST_F(HookManagerTest, ModifyingHooksMergeResults) {
 }
 
 TEST_F(HookManagerTest, SyncHooksMergeResults) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   hooks.RegisterHook("tool_result_persist", "p1",
                      [](const nlohmann::json&) -> nlohmann::json {
@@ -672,7 +672,7 @@ TEST_F(HookManagerTest, SyncHooksMergeResults) {
 }
 
 TEST_F(HookManagerTest, ModifyingHookLaterOverridesEarlier) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   hooks.RegisterHook(
       "before_prompt_build", "first",
@@ -695,27 +695,27 @@ TEST_F(HookManagerTest, ModifyingHookLaterOverridesEarlier) {
 
 TEST(PluginHelpersTest, OriginToString) {
   EXPECT_EQ(
-      quantclaw::plugin_origin_to_string(quantclaw::PluginOrigin::kBundled),
+      ravbot::plugin_origin_to_string(ravbot::PluginOrigin::kBundled),
       "bundled");
   EXPECT_EQ(
-      quantclaw::plugin_origin_to_string(quantclaw::PluginOrigin::kGlobal),
+      ravbot::plugin_origin_to_string(ravbot::PluginOrigin::kGlobal),
       "global");
   EXPECT_EQ(
-      quantclaw::plugin_origin_to_string(quantclaw::PluginOrigin::kWorkspace),
+      ravbot::plugin_origin_to_string(ravbot::PluginOrigin::kWorkspace),
       "workspace");
   EXPECT_EQ(
-      quantclaw::plugin_origin_to_string(quantclaw::PluginOrigin::kConfig),
+      ravbot::plugin_origin_to_string(ravbot::PluginOrigin::kConfig),
       "config");
 }
 
 TEST(PluginHelpersTest, StatusToString) {
   EXPECT_EQ(
-      quantclaw::plugin_status_to_string(quantclaw::PluginStatus::kLoaded),
+      ravbot::plugin_status_to_string(ravbot::PluginStatus::kLoaded),
       "loaded");
   EXPECT_EQ(
-      quantclaw::plugin_status_to_string(quantclaw::PluginStatus::kDisabled),
+      ravbot::plugin_status_to_string(ravbot::PluginStatus::kDisabled),
       "disabled");
-  EXPECT_EQ(quantclaw::plugin_status_to_string(quantclaw::PluginStatus::kError),
+  EXPECT_EQ(ravbot::plugin_status_to_string(ravbot::PluginStatus::kError),
             "error");
 }
 
@@ -736,8 +736,8 @@ class PluginSystemTest : public PluginManifestTest {
 };
 
 TEST_F(PluginSystemTest, InitializeWithNoPlugins) {
-  quantclaw::PluginSystem sys(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginSystem sys(logger_);
+  ravbot::RavBotConfig config;
   EXPECT_TRUE(sys.Initialize(config, test_dir_));
   EXPECT_TRUE(sys.Registry().Plugins().empty());
   EXPECT_FALSE(sys.IsSidecarRunning());
@@ -751,10 +751,10 @@ TEST_F(PluginSystemTest, InitializeDiscoversManifests) {
     ofs << R"({"id":"my-plugin","skills":["weather"]})";
   }
 
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {{"load", {{"paths", {plugins_dir.string()}}}}};
 
-  quantclaw::PluginSystem sys(logger_);
+  ravbot::PluginSystem sys(logger_);
   EXPECT_TRUE(sys.Initialize(config, test_dir_));
   EXPECT_EQ(sys.Registry().Plugins().size(), 1);
   // No sidecar script found → manifest-only mode
@@ -769,10 +769,10 @@ TEST_F(PluginSystemTest, ReloadRediscoversPlugins) {
     ofs << R"({"id":"first"})";
   }
 
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {{"load", {{"paths", {plugins_dir.string()}}}}};
 
-  quantclaw::PluginSystem sys(logger_);
+  ravbot::PluginSystem sys(logger_);
   sys.Initialize(config, test_dir_);
   EXPECT_EQ(sys.Registry().Plugins().size(), 1);
 
@@ -788,8 +788,8 @@ TEST_F(PluginSystemTest, ReloadRediscoversPlugins) {
 }
 
 TEST_F(PluginSystemTest, HooksWorkWithoutSidecar) {
-  quantclaw::PluginSystem sys(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginSystem sys(logger_);
+  ravbot::RavBotConfig config;
   sys.Initialize(config, test_dir_);
 
   bool fired = false;
@@ -811,7 +811,7 @@ class PluginRegistryCapTest : public ::testing::Test {
  protected:
   void SetUp() override {
     logger_ = make_null_logger("cap_test");
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_cap_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_cap_test");
   }
   void TearDown() override {
     fs::remove_all(test_dir_);
@@ -821,7 +821,7 @@ class PluginRegistryCapTest : public ::testing::Test {
 };
 
 TEST_F(PluginRegistryCapTest, UpdateFromSidecarPopulatesExistingRecord) {
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
 
   // Set up a plugin directory with manifest
   auto plugins_dir = test_dir_ / "plugins";
@@ -830,7 +830,7 @@ TEST_F(PluginRegistryCapTest, UpdateFromSidecarPopulatesExistingRecord) {
     std::ofstream ofs(plugins_dir / "my-plugin" / "openclaw.plugin.json");
     ofs << R"({"id":"my-plugin","name":"My Plugin"})";
   }
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {{"load", {{"paths", {plugins_dir.string()}}}}};
   reg.Discover(config, test_dir_);
 
@@ -874,10 +874,10 @@ TEST_F(PluginRegistryCapTest, UpdateFromSidecarPopulatesExistingRecord) {
 
 TEST_F(PluginRegistryCapTest,
        UpdateFromSidecarCreatesNewRecordForUnknownPlugin) {
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
 
   // Empty registry — no plugins discovered
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   reg.Discover(config, test_dir_);
   EXPECT_TRUE(reg.Plugins().empty());
 
@@ -904,7 +904,7 @@ TEST_F(PluginRegistryCapTest,
 }
 
 TEST_F(PluginRegistryCapTest, UpdateFromSidecarMergesWithoutDuplication) {
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
 
   auto plugins_dir = test_dir_ / "plugins";
   fs::create_directories(plugins_dir / "my-plugin");
@@ -912,7 +912,7 @@ TEST_F(PluginRegistryCapTest, UpdateFromSidecarMergesWithoutDuplication) {
     std::ofstream ofs(plugins_dir / "my-plugin" / "openclaw.plugin.json");
     ofs << R"({"id":"my-plugin","channels":["discord"],"providers":["openai"]})";
   }
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {{"load", {{"paths", {plugins_dir.string()}}}}};
   reg.Discover(config, test_dir_);
 
@@ -936,8 +936,8 @@ TEST_F(PluginRegistryCapTest, UpdateFromSidecarMergesWithoutDuplication) {
 }
 
 TEST_F(PluginRegistryCapTest, UpdateFromSidecarHandlesInvalidInput) {
-  quantclaw::PluginRegistry reg(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginRegistry reg(logger_);
+  ravbot::RavBotConfig config;
   reg.Discover(config, test_dir_);
 
   // Invalid: not an object
@@ -958,8 +958,8 @@ TEST_F(PluginRegistryCapTest, UpdateFromSidecarHandlesInvalidInput) {
 }
 
 TEST_F(PluginRegistryCapTest, UpdateFromSidecarSkipsEntriesWithoutId) {
-  quantclaw::PluginRegistry reg(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginRegistry reg(logger_);
+  ravbot::RavBotConfig config;
   reg.Discover(config, test_dir_);
 
   nlohmann::json sidecar_list = {
@@ -979,7 +979,7 @@ TEST_F(PluginRegistryCapTest, UpdateFromSidecarSkipsEntriesWithoutId) {
 }
 
 TEST_F(PluginRegistryCapTest, ToJsonIncludesCapabilities) {
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
 
   auto plugins_dir = test_dir_ / "plugins";
   fs::create_directories(plugins_dir / "full-plugin");
@@ -987,7 +987,7 @@ TEST_F(PluginRegistryCapTest, ToJsonIncludesCapabilities) {
     std::ofstream ofs(plugins_dir / "full-plugin" / "openclaw.plugin.json");
     ofs << R"({"id":"full-plugin","name":"Full"})";
   }
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {{"load", {{"paths", {plugins_dir.string()}}}}};
   reg.Discover(config, test_dir_);
 
@@ -1013,7 +1013,7 @@ TEST_F(PluginRegistryCapTest, ToJsonIncludesCapabilities) {
 }
 
 TEST_F(PluginRegistryCapTest, PluginRecordNewFields) {
-  quantclaw::PluginRecord rec;
+  ravbot::PluginRecord rec;
   // Default state: all capability lists empty
   EXPECT_TRUE(rec.tool_names.empty());
   EXPECT_TRUE(rec.service_ids.empty());
@@ -1022,7 +1022,7 @@ TEST_F(PluginRegistryCapTest, PluginRecordNewFields) {
 }
 
 TEST_F(PluginRegistryCapTest, MultiplePluginsUpdated) {
-  quantclaw::PluginRegistry reg(logger_);
+  ravbot::PluginRegistry reg(logger_);
 
   auto plugins_dir = test_dir_ / "plugins";
   fs::create_directories(plugins_dir / "p1");
@@ -1035,7 +1035,7 @@ TEST_F(PluginRegistryCapTest, MultiplePluginsUpdated) {
     std::ofstream ofs(plugins_dir / "p2" / "openclaw.plugin.json");
     ofs << R"({"id":"p2"})";
   }
-  quantclaw::QuantClawConfig config;
+  ravbot::RavBotConfig config;
   config.plugins_config = {{"load", {{"paths", {plugins_dir.string()}}}}};
   reg.Discover(config, test_dir_);
 
@@ -1060,8 +1060,8 @@ TEST_F(PluginRegistryCapTest, MultiplePluginsUpdated) {
 // --- PluginSystem convenience method tests (no sidecar) ---
 
 TEST_F(PluginSystemTest, ListServicesWithoutSidecar) {
-  quantclaw::PluginSystem sys(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginSystem sys(logger_);
+  ravbot::RavBotConfig config;
   sys.Initialize(config, test_dir_);
 
   auto result = sys.ListServices();
@@ -1070,8 +1070,8 @@ TEST_F(PluginSystemTest, ListServicesWithoutSidecar) {
 }
 
 TEST_F(PluginSystemTest, ListProvidersWithoutSidecar) {
-  quantclaw::PluginSystem sys(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginSystem sys(logger_);
+  ravbot::RavBotConfig config;
   sys.Initialize(config, test_dir_);
 
   auto result = sys.ListProviders();
@@ -1080,8 +1080,8 @@ TEST_F(PluginSystemTest, ListProvidersWithoutSidecar) {
 }
 
 TEST_F(PluginSystemTest, ListCommandsWithoutSidecar) {
-  quantclaw::PluginSystem sys(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginSystem sys(logger_);
+  ravbot::RavBotConfig config;
   sys.Initialize(config, test_dir_);
 
   auto result = sys.ListCommands();
@@ -1090,8 +1090,8 @@ TEST_F(PluginSystemTest, ListCommandsWithoutSidecar) {
 }
 
 TEST_F(PluginSystemTest, ListGatewayMethodsWithoutSidecar) {
-  quantclaw::PluginSystem sys(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginSystem sys(logger_);
+  ravbot::RavBotConfig config;
   sys.Initialize(config, test_dir_);
 
   auto result = sys.ListGatewayMethods();
@@ -1100,8 +1100,8 @@ TEST_F(PluginSystemTest, ListGatewayMethodsWithoutSidecar) {
 }
 
 TEST_F(PluginSystemTest, ExecuteCommandWithoutSidecar) {
-  quantclaw::PluginSystem sys(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginSystem sys(logger_);
+  ravbot::RavBotConfig config;
   sys.Initialize(config, test_dir_);
 
   auto result = sys.ExecuteCommand("test", {});
@@ -1109,8 +1109,8 @@ TEST_F(PluginSystemTest, ExecuteCommandWithoutSidecar) {
 }
 
 TEST_F(PluginSystemTest, StartStopServiceWithoutSidecar) {
-  quantclaw::PluginSystem sys(logger_);
-  quantclaw::QuantClawConfig config;
+  ravbot::PluginSystem sys(logger_);
+  ravbot::RavBotConfig config;
   sys.Initialize(config, test_dir_);
 
   auto start_result = sys.StartService("svc");
@@ -1125,7 +1125,7 @@ TEST_F(PluginSystemTest, StartStopServiceWithoutSidecar) {
 // ================================================================
 
 TEST_F(HookManagerTest, UnregisterSpecificHandler) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   std::vector<std::string> calls;
   hooks.RegisterHook("before_model_resolve", "plugin-a",
@@ -1154,7 +1154,7 @@ TEST_F(HookManagerTest, UnregisterSpecificHandler) {
 }
 
 TEST_F(HookManagerTest, ErrorInHandlerDoesNotBreakOthers) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   std::vector<std::string> calls;
   // Use a modifying hook so handlers run sequentially
@@ -1181,19 +1181,19 @@ TEST_F(HookManagerTest, ErrorInHandlerDoesNotBreakOthers) {
 
 TEST_F(HookManagerTest, HookModeForClassification) {
   // Verify at least 5 hook names return correct modes
-  EXPECT_EQ(quantclaw::GetHookMode("before_model_resolve"),
-            quantclaw::HookMode::kModifying);
-  EXPECT_EQ(quantclaw::GetHookMode("llm_input"), quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("tool_result_persist"),
-            quantclaw::HookMode::kSync);
-  EXPECT_EQ(quantclaw::GetHookMode("message_received"),
-            quantclaw::HookMode::kVoid);
-  EXPECT_EQ(quantclaw::GetHookMode("before_tool_call"),
-            quantclaw::HookMode::kModifying);
+  EXPECT_EQ(ravbot::GetHookMode("before_model_resolve"),
+            ravbot::HookMode::kModifying);
+  EXPECT_EQ(ravbot::GetHookMode("llm_input"), ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("tool_result_persist"),
+            ravbot::HookMode::kSync);
+  EXPECT_EQ(ravbot::GetHookMode("message_received"),
+            ravbot::HookMode::kVoid);
+  EXPECT_EQ(ravbot::GetHookMode("before_tool_call"),
+            ravbot::HookMode::kModifying);
 }
 
 TEST_F(HookManagerTest, ClearAllHandlers) {
-  quantclaw::HookManager hooks(logger_);
+  ravbot::HookManager hooks(logger_);
 
   hooks.RegisterHook("before_model_resolve", "p1",
                      [](const nlohmann::json&) -> nlohmann::json {

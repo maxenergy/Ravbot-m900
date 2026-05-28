@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/skill_loader.hpp"
+#include "ravbot/core/skill_loader.hpp"
 
 #include <cctype>
 #include <cstdlib>
@@ -14,9 +14,9 @@
 
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/platform/process.hpp"
+#include "ravbot/platform/process.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 SkillLoader::SkillLoader(std::shared_ptr<spdlog::logger> logger)
     : logger_(logger) {
@@ -198,7 +198,7 @@ bool SkillLoader::InstallSkill(const SkillMetadata& skill) {
     } else if (eff_method == "brew") {
       cmd = "brew install " + eff_formula;
     } else if (eff_method == "download") {
-      std::string bin_dir = platform::home_directory() + "/.quantclaw/bin";
+      std::string bin_dir = platform::home_directory() + "/.ravbot/bin";
       std::filesystem::create_directories(bin_dir);
       std::string dest =
           bin_dir + "/" + (eff_binary.empty() ? "downloaded" : eff_binary);
@@ -366,7 +366,7 @@ SkillLoader::parse_skill_file(const std::filesystem::path& skill_file) const {
       }
 
       // Extract install info — supports both formats:
-      //   QuantClaw object: { "apt": "curl", "node": "@pkg/cli" }
+      //   RavBot object: { "apt": "curl", "node": "@pkg/cli" }
       //   OpenClaw array:   [{ "kind": "brew", "formula": "curl", "bins":
       //   ["curl"] }]
       nlohmann::json* install_section = nullptr;
@@ -408,7 +408,7 @@ SkillLoader::parse_skill_file(const std::filesystem::path& skill_file) const {
             skill.installs.push_back(std::move(info));
           }
         } else if (install_section->is_object()) {
-          // QuantClaw object format: { method: formula }
+          // RavBot object format: { method: formula }
           for (auto it = install_section->begin(); it != install_section->end();
                ++it) {
             SkillInstallInfo info;
@@ -747,7 +747,7 @@ SkillLoader::LoadSkills(const SkillsConfig& skills_config,
   dirs.push_back(workspace_path / "skills");
 
   dirs.push_back(std::filesystem::path(platform::home_directory()) /
-                 ".quantclaw" / "skills");
+                 ".ravbot" / "skills");
 
   for (const auto& extra : skills_config.load.extra_dirs) {
     dirs.push_back(std::filesystem::path(extra));
@@ -780,4 +780,4 @@ SkillLoader::LoadSkills(const SkillsConfig& skills_config,
   return result;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

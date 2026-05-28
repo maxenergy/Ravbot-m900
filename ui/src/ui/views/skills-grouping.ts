@@ -1,3 +1,4 @@
+import { t } from "../../i18n/index.ts";
 import type { SkillStatusEntry } from "../types.ts";
 
 export type SkillGroup = {
@@ -7,10 +8,10 @@ export type SkillGroup = {
 };
 
 const SKILL_SOURCE_GROUPS: Array<{ id: string; label: string; sources: string[] }> = [
-  { id: "workspace", label: "Workspace Skills", sources: ["quantclaw-workspace"] },
-  { id: "built-in", label: "Built-in Skills", sources: ["quantclaw-bundled"] },
-  { id: "installed", label: "Installed Skills", sources: ["quantclaw-managed"] },
-  { id: "extra", label: "Extra Skills", sources: ["quantclaw-extra"] },
+  { id: "workspace", label: t("skills.groups.workspace"), sources: ["ravbot-workspace"] },
+  { id: "built-in", label: t("skills.groups.builtIn"), sources: ["ravbot-bundled"] },
+  { id: "installed", label: t("skills.groups.installed"), sources: ["ravbot-managed"] },
+  { id: "extra", label: t("skills.groups.extra"), sources: ["ravbot-extra"] },
 ];
 
 export function groupSkills(skills: SkillStatusEntry[]): SkillGroup[] {
@@ -19,7 +20,7 @@ export function groupSkills(skills: SkillStatusEntry[]): SkillGroup[] {
     groups.set(def.id, { id: def.id, label: def.label, skills: [] });
   }
   const builtInGroup = SKILL_SOURCE_GROUPS.find((group) => group.id === "built-in");
-  const other: SkillGroup = { id: "other", label: "Other Skills", skills: [] };
+  const other: SkillGroup = { id: "other", label: t("skills.groups.other"), skills: [] };
   for (const skill of skills) {
     const match = skill.bundled
       ? builtInGroup

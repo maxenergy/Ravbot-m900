@@ -1,16 +1,16 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/core/context_engine.hpp"
-#include "quantclaw/core/default_context_engine.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/core/context_engine.hpp"
+#include "ravbot/core/default_context_engine.hpp"
 
 #include <gtest/gtest.h>
 
-namespace quantclaw {
+namespace ravbot {
 
 // ================================================================
 // Custom ContextEngine for injection testing
@@ -245,4 +245,4 @@ TEST(ContextEngineInjectionTest, NameIsCorrect) {
   EXPECT_EQ(engine.Name(), "test-engine");
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

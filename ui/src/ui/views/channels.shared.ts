@@ -1,4 +1,5 @@
 import { html, nothing } from "lit";
+import { t } from "../../i18n/index.ts";
 import type { ChannelAccountSnapshot } from "../types.ts";
 import type { ChannelKey, ChannelsProps } from "./channels.types.ts";
 
@@ -34,5 +35,25 @@ export function renderChannelAccountCount(
   if (count < 2) {
     return nothing;
   }
-  return html`<div class="account-count">Accounts (${count})</div>`;
+  return html`<div class="account-count">${t("channels.accounts.count", { count: String(count) })}</div>`;
+}
+
+export function formatChannelBool(value: boolean | null | undefined): string {
+  if (value == null) {
+    return t("common.na");
+  }
+  return value ? t("common.yes") : t("common.no");
+}
+
+export function formatChannelStatus(value: "yes" | "no" | "active" | "na"): string {
+  switch (value) {
+    case "yes":
+      return t("common.yes");
+    case "no":
+      return t("common.no");
+    case "active":
+      return t("common.active");
+    case "na":
+      return t("common.na");
+  }
 }

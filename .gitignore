@@ -1,5 +1,6 @@
 # Build output
 build/
+build-*/
 build-win/
 build_test/
 cmake-build-*/
@@ -30,6 +31,9 @@ Thumbs.db
 # Logs and runtime
 *.log
 *.pid
+license.json
+license-records.json
+ravbot-license-records.json
 
 # Adapter secrets
 src/adapters/.env

@@ -1,4 +1,4 @@
-/* @vitest-environment jsdom */
+/* @vitest-environment node */
 
 import { describe, expect, it, vi } from "vitest";
 import { CONTROL_UI_BOOTSTRAP_CONFIG_PATH } from "../../gateway/control-ui-contract.js";
@@ -9,16 +9,17 @@ describe("loadControlUiBootstrapConfig", () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        basePath: "/quantclaw",
+        basePath: "/ravbot",
         assistantName: "Ops",
         assistantAvatar: "O",
         assistantAgentId: "main",
       }),
     });
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
+    vi.stubGlobal("window", {});
 
     const state = {
-      basePath: "/quantclaw",
+      basePath: "/ravbot",
       assistantName: "Assistant",
       assistantAvatar: null,
       assistantAgentId: null,
@@ -27,7 +28,7 @@ describe("loadControlUiBootstrapConfig", () => {
     await loadControlUiBootstrapConfig(state);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      `/quantclaw${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}`,
+      `/ravbot${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}`,
       expect.objectContaining({ method: "GET" }),
     );
     expect(state.assistantName).toBe("Ops");
@@ -40,6 +41,7 @@ describe("loadControlUiBootstrapConfig", () => {
   it("ignores failures", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: false });
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
+    vi.stubGlobal("window", {});
 
     const state = {
       basePath: "",
@@ -62,9 +64,10 @@ describe("loadControlUiBootstrapConfig", () => {
   it("normalizes trailing slash basePath for bootstrap fetch path", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: false });
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
+    vi.stubGlobal("window", {});
 
     const state = {
-      basePath: "/quantclaw/",
+      basePath: "/ravbot/",
       assistantName: "Assistant",
       assistantAvatar: null,
       assistantAgentId: null,
@@ -73,7 +76,7 @@ describe("loadControlUiBootstrapConfig", () => {
     await loadControlUiBootstrapConfig(state);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      `/quantclaw${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}`,
+      `/ravbot${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}`,
       expect.objectContaining({ method: "GET" }),
     );
 

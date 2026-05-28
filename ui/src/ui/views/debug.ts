@@ -58,7 +58,7 @@ export function renderDebug(props: DebugProps) {
                   ${t("debug.securityAudit")}: ${securityLabel}${
                     info > 0 ? ` · ${t("debug.securityInfo", { count: String(info) })}` : ""
                   }. ${t("debug.securityRunForDetails")}
-                  <span class="mono">quantclaw security audit --deep</span>
+                  <span class="mono">ravbot security audit --deep</span>
                   ${t("debug.securityForDetailsSuffix")}
                 </div>`
                 : nothing

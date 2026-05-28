@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <cctype>
@@ -11,41 +11,96 @@
 #include <sstream>
 #include <unordered_set>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/constants.hpp"
-#include "quantclaw/core/agent_loop.hpp"
-#include "quantclaw/core/cron_scheduler.hpp"
-#include "quantclaw/core/memory_search.hpp"
-#include "quantclaw/core/message_commands.hpp"
-#include "quantclaw/core/prompt_builder.hpp"
-#include "quantclaw/core/session_compaction.hpp"
-#include "quantclaw/core/skill_loader.hpp"
-#include "quantclaw/gateway/command_queue.hpp"
-#include "quantclaw/gateway/gateway_server.hpp"
-#include "quantclaw/gateway/protocol.hpp"
-#include "quantclaw/platform/process.hpp"
-#include "quantclaw/plugins/plugin_system.hpp"
-#include "quantclaw/providers/provider_registry.hpp"
-#include "quantclaw/security/exec_approval.hpp"
-#include "quantclaw/session/session_manager.hpp"
-#include "quantclaw/tools/tool_chain.hpp"
-#include "quantclaw/tools/tool_registry.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/constants.hpp"
+#include "ravbot/core/agent_loop.hpp"
+#include "ravbot/core/cron_scheduler.hpp"
+#include "ravbot/core/memory_search.hpp"
+#include "ravbot/core/message_commands.hpp"
+#include "ravbot/core/prompt_builder.hpp"
+#include "ravbot/core/session_compaction.hpp"
+#include "ravbot/core/skill_loader.hpp"
+#include "ravbot/gateway/command_queue.hpp"
+#include "ravbot/gateway/gateway_server.hpp"
+#include "ravbot/gateway/protocol.hpp"
+#include "ravbot/platform/process.hpp"
+#include "ravbot/plugins/plugin_system.hpp"
+#include "ravbot/providers/provider_registry.hpp"
+#include "ravbot/security/exec_approval.hpp"
+#include "ravbot/session/session_manager.hpp"
+#include "ravbot/tools/tool_chain.hpp"
+#include "ravbot/tools/tool_registry.hpp"
 
-namespace quantclaw::gateway {
+namespace ravbot::gateway {
+
+namespace {
+
+std::string read_text_file_if_exists(const std::string& path) {
+  if (!std::filesystem::exists(path)) {
+    return {};
+  }
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    throw std::runtime_error("Cannot open config file: " + path);
+  }
+  return std::string((std::istreambuf_iterator<char>(file)),
+                     std::istreambuf_iterator<char>());
+}
+
+std::string config_hash(const std::string& raw) {
+  return std::to_string(std::hash<std::string>{}(raw));
+}
+
+nlohmann::json provider_config_to_json(const ravbot::ProviderConfig& provider) {
+  nlohmann::json result = nlohmann::json::object();
+  result["apiKey"] = provider.api_key;
+  result["baseUrl"] = provider.base_url;
+  result["api"] = provider.api;
+  result["timeout"] = provider.timeout;
+  if (!provider.profiles.empty()) {
+    result["profiles"] = nlohmann::json::array();
+    for (const auto& profile : provider.profiles) {
+      result["profiles"].push_back({{"id", profile.id},
+                                    {"apiKey", profile.api_key},
+                                    {"apiKeyEnv", profile.api_key_env},
+                                    {"priority", profile.priority}});
+    }
+  }
+  if (!provider.models.empty()) {
+    result["models"] = nlohmann::json::array();
+    for (const auto& model : provider.models) {
+      result["models"].push_back(
+          {{"id", model.id},
+           {"name", model.name},
+           {"reasoning", model.reasoning},
+           {"input", model.input},
+           {"contextWindow", model.context_window},
+           {"maxTokens", model.max_tokens},
+           {"cost",
+            {{"input", model.cost.input},
+             {"output", model.cost.output},
+             {"cacheRead", model.cost.cache_read},
+             {"cacheWrite", model.cost.cache_write}}}});
+    }
+  }
+  return result;
+}
+
+}  // namespace
 
 void register_rpc_handlers(
     GatewayServer& server,
-    std::shared_ptr<quantclaw::SessionManager> session_manager,
-    std::shared_ptr<quantclaw::AgentLoop> agent_loop,
-    std::shared_ptr<quantclaw::PromptBuilder> prompt_builder,
-    std::shared_ptr<quantclaw::ToolRegistry> tool_registry,
-    const quantclaw::QuantClawConfig& config,
+    std::shared_ptr<ravbot::SessionManager> session_manager,
+    std::shared_ptr<ravbot::AgentLoop> agent_loop,
+    std::shared_ptr<ravbot::PromptBuilder> prompt_builder,
+    std::shared_ptr<ravbot::ToolRegistry> tool_registry,
+    const ravbot::RavBotConfig& config,
     std::shared_ptr<spdlog::logger> logger, std::function<void()> reload_fn,
-    std::shared_ptr<quantclaw::ProviderRegistry> provider_registry,
-    std::shared_ptr<quantclaw::SkillLoader> skill_loader,
-    std::shared_ptr<quantclaw::CronScheduler> cron_scheduler,
-    std::shared_ptr<quantclaw::ExecApprovalManager> exec_approval_mgr,
-    quantclaw::PluginSystem* plugin_system, CommandQueue* command_queue,
+    std::shared_ptr<ravbot::ProviderRegistry> provider_registry,
+    std::shared_ptr<ravbot::SkillLoader> skill_loader,
+    std::shared_ptr<ravbot::CronScheduler> cron_scheduler,
+    std::shared_ptr<ravbot::ExecApprovalManager> exec_approval_mgr,
+    ravbot::PluginSystem* plugin_system, CommandQueue* command_queue,
     std::string log_file_path,
     std::function<std::vector<std::string>()> running_adapters_fn) {
   // --- gateway.health ---
@@ -55,7 +110,7 @@ void register_rpc_handlers(
                         ClientConnection& /*client*/) -> nlohmann::json {
         return {{"status", "ok"},
                 {"uptime", server.GetUptimeSeconds()},
-                {"version", quantclaw::kVersion}};
+                {"version", ravbot::kVersion}};
       });
 
   // --- gateway.status ---
@@ -69,7 +124,23 @@ void register_rpc_handlers(
                                    {"connections", server.GetConnectionCount()},
                                    {"uptime", server.GetUptimeSeconds()},
                                    {"sessions", sessions.size()},
-                                   {"version", quantclaw::kVersion}};
+                                   {"version", ravbot::kVersion}};
+                         });
+
+  // --- system-presence ---
+  // Compatibility endpoint used by the Control UI instances view. Presence is
+  // already included in hello snapshots/events; this RPC gives manual refresh
+  // a stable read path.
+  server.RegisterHandler("system-presence",
+                         [&server](const nlohmann::json& /*params*/,
+                                   ClientConnection& /*client*/)
+                             -> nlohmann::json {
+                           auto snapshot = server.BuildSnapshot();
+                           if (snapshot.contains("presence") &&
+                               snapshot["presence"].is_array()) {
+                             return snapshot["presence"];
+                           }
+                           return nlohmann::json::array();
                          });
 
   // --- config.get ---
@@ -91,6 +162,22 @@ void register_rpc_handlers(
               {"autoCompact", config.agent.auto_compact}}},
             {"gateway",
              {{"port", config.gateway.port}, {"bind", config.gateway.bind}}}};
+        full_config["providers"] = nlohmann::json::object();
+        for (const auto& [id, provider] : config.providers) {
+          full_config["providers"][id] = provider_config_to_json(provider);
+        }
+        full_config["models"] = {{"providers", nlohmann::json::object()}};
+        for (const auto& [id, provider] : config.model_providers) {
+          full_config["models"]["providers"][id] =
+              provider_config_to_json(provider);
+        }
+        if (!config.model_entries.empty()) {
+          full_config["agents"] = {{"defaults", {{"models", nlohmann::json::object()}}}};
+          for (const auto& [id, entry] : config.model_entries) {
+            full_config["agents"]["defaults"]["models"][id] = {
+                {"alias", entry.alias}, {"params", entry.params}};
+          }
+        }
 
         if (!path_param.empty()) {
           // Dot-path lookup for legacy callers
@@ -108,12 +195,17 @@ void register_rpc_handlers(
         }
 
         // Return ConfigSnapshot shape expected by the UI
-        auto config_path = QuantClawConfig::DefaultConfigPath();
+        auto config_path = RavBotConfig::DefaultConfigPath();
         bool exists = std::filesystem::exists(config_path);
-        std::string raw_str = full_config.dump(2);
+        std::string raw_str =
+            exists ? read_text_file_if_exists(config_path) : full_config.dump(2);
+        if (raw_str.empty()) {
+          raw_str = full_config.dump(2);
+        }
+        std::string hash = config_hash(raw_str);
 
         return {{"path", config_path},   {"exists", exists},
-                {"raw", raw_str},        {"hash", ""},
+                {"raw", raw_str},        {"hash", hash},
                 {"parsed", full_config}, {"valid", true},
                 {"config", full_config}, {"issues", nlohmann::json::array()}};
       });
@@ -123,6 +215,30 @@ void register_rpc_handlers(
       methods::kConfigSet,
       [logger, reload_fn](const nlohmann::json& params,
                           ClientConnection& /*client*/) -> nlohmann::json {
+        if (params.contains("raw") && params["raw"].is_string()) {
+          auto config_file = RavBotConfig::ExpandHome(RavBotConfig::DefaultConfigPath());
+          auto parent = std::filesystem::path(config_file).parent_path();
+          if (!parent.empty()) {
+            std::filesystem::create_directories(parent);
+          }
+          std::string raw = params["raw"].get<std::string>();
+          auto parsed = nlohmann::json::parse(raw);
+          if (std::filesystem::exists(config_file)) {
+            std::filesystem::copy_file(
+                config_file, config_file + ".bak",
+                std::filesystem::copy_options::overwrite_existing);
+          }
+          std::ofstream file(config_file);
+          if (!file.is_open()) {
+            throw std::runtime_error("Cannot write config file: " + config_file);
+          }
+          file << parsed.dump(2) << std::endl;
+          if (reload_fn) {
+            reload_fn();
+          }
+          return {{"ok", true}, {"hash", config_hash(parsed.dump(2))}};
+        }
+
         std::string path = params.value("path", "");
         if (path.empty()) {
           throw std::runtime_error("path is required");
@@ -131,8 +247,8 @@ void register_rpc_handlers(
           throw std::runtime_error("value is required");
         }
 
-        auto config_file = QuantClawConfig::DefaultConfigPath();
-        QuantClawConfig::SetValue(config_file, path, params["value"]);
+        auto config_file = RavBotConfig::DefaultConfigPath();
+        RavBotConfig::SetValue(config_file, path, params["value"]);
 
         // Trigger hot-reload so the running server picks up the change
         if (reload_fn) {
@@ -153,7 +269,7 @@ void register_rpc_handlers(
   auto execute_agent_request =
       [session_manager, agent_loop, prompt_builder, logger](
           const nlohmann::json& params, ClientConnection& /*client*/,
-          quantclaw::AgentEventCallback event_callback) -> AgentRequestResult {
+          ravbot::AgentEventCallback event_callback) -> AgentRequestResult {
     std::string session_key = params.value("sessionKey", "agent:main:main");
     std::string message = params.value("message", "");
     std::string error_message;
@@ -166,7 +282,7 @@ void register_rpc_handlers(
     // Check if the message is a slash command (/new, /reset, /compact, etc.)
     // before forwarding to the LLM.
     {
-      quantclaw::MessageCommandParser::Handlers cmd_handlers;
+      ravbot::MessageCommandParser::Handlers cmd_handlers;
       cmd_handlers.reset_session = [session_manager](const std::string& key) {
         session_manager->ResetSession(key);
       };
@@ -191,7 +307,7 @@ void register_rpc_handlers(
                "\nMessages: " + std::to_string(history.size());
       };
 
-      quantclaw::MessageCommandParser cmd_parser(std::move(cmd_handlers));
+      ravbot::MessageCommandParser cmd_parser(std::move(cmd_handlers));
       auto cmd_result = cmd_parser.Parse(message, session_key);
       if (cmd_result.handled) {
         return {session_key, cmd_result.reply, ""};
@@ -221,9 +337,9 @@ void register_rpc_handlers(
     auto history = session_manager->GetHistory(session_key, 50);
 
     // Convert SessionMessages to LLM Messages (lossless copy)
-    std::vector<quantclaw::Message> llm_history;
+    std::vector<ravbot::Message> llm_history;
     for (const auto& smsg : history) {
-      quantclaw::Message m;
+      ravbot::Message m;
       m.role = smsg.role;
       m.content = smsg.content;
       llm_history.push_back(m);
@@ -238,7 +354,7 @@ void register_rpc_handlers(
     // Send streaming events to the client
     std::string final_response;
     auto wrapped_callback = [&event_callback, &final_response, &error_message](
-                                const quantclaw::AgentEvent& event) {
+                                const ravbot::AgentEvent& event) {
       event_callback(event);
       if (event.type != events::kMessageEnd) {
         return;
@@ -257,7 +373,7 @@ void register_rpc_handlers(
 
     // Persist all new messages (assistant + tool_result) to session transcript
     for (const auto& msg : new_messages) {
-      quantclaw::SessionMessage smsg;
+      ravbot::SessionMessage smsg;
       smsg.role = msg.role;
       smsg.content = msg.content;
       session_manager->AppendMessage(session_key, smsg);
@@ -278,7 +394,7 @@ void register_rpc_handlers(
                ClientConnection& client) -> nlohmann::json {
         auto result = execute_agent_request(
             params, client,
-            [&server, &client, logger](const quantclaw::AgentEvent& event) {
+            [&server, &client, logger](const ravbot::AgentEvent& event) {
               RpcEvent rpc_event;
               rpc_event.event = event.type;
               rpc_event.payload = event.data;
@@ -536,7 +652,7 @@ void register_rpc_handlers(
       });
 
   // --- agents.list (OpenClaw multi-agent compat stub) ---
-  // QuantClaw uses a single "main" agent; return AgentsListResult shape.
+  // RavBot uses a single "main" agent; return AgentsListResult shape.
   server.RegisterHandler(
       "agents.list",
       [](const nlohmann::json& /*params*/,
@@ -546,9 +662,9 @@ void register_rpc_handlers(
                 {"scope", "local"},
                 {"agents", nlohmann::json::array(
                                {nlohmann::json{{"id", "main"},
-                                               {"name", "QuantClaw Agent"},
+                                               {"name", "RavBot Agent"},
                                                {"identity",
-                                                {{"name", "QuantClaw Agent"},
+                                                {{"name", "RavBot Agent"},
                                                  {"theme", "default"},
                                                  {"emoji", "\xF0\x9F\xA6\x9E"},
                                                  {"avatar", ""}}}}})}};
@@ -559,15 +675,15 @@ void register_rpc_handlers(
       methods::kChainExecute,
       [tool_registry, logger](const nlohmann::json& params,
                               ClientConnection& /*client*/) -> nlohmann::json {
-        auto chain_def = quantclaw::ToolChainExecutor::ParseChain(params);
-        quantclaw::ToolExecutorFn executor =
+        auto chain_def = ravbot::ToolChainExecutor::ParseChain(params);
+        ravbot::ToolExecutorFn executor =
             [tool_registry](const std::string& name,
                             const nlohmann::json& args) {
               return tool_registry->ExecuteTool(name, args);
             };
-        quantclaw::ToolChainExecutor chain_executor(executor, logger);
+        ravbot::ToolChainExecutor chain_executor(executor, logger);
         auto result = chain_executor.Execute(chain_def);
-        return quantclaw::ToolChainExecutor::ResultToJson(result);
+        return ravbot::ToolChainExecutor::ResultToJson(result);
       });
 
   // --- config.reload / config.apply (OpenClaw alias) ---
@@ -588,7 +704,7 @@ void register_rpc_handlers(
   // ================================================================
 
   // --- chat.send (OpenClaw) ---
-  // Translates QuantClaw agent events to OpenClaw format
+  // Translates RavBot agent events to OpenClaw format
   server.RegisterHandler(
       methods::kOcChatSend,
       [execute_agent_request, &server,
@@ -602,7 +718,7 @@ void register_rpc_handlers(
             params, client,
             [&server, &client, logger, session_key, idempotency_key,
              &streamed_text,
-             &accumulated_text](const quantclaw::AgentEvent& event) {
+             &accumulated_text](const ravbot::AgentEvent& event) {
               RpcEvent rpc_event;
 
               if (event.type == events::kTextDelta) {
@@ -727,7 +843,7 @@ void register_rpc_handlers(
                         ClientConnection& /*client*/) -> nlohmann::json {
         return {{"status", "ok"},
                 {"uptime", server.GetUptimeSeconds()},
-                {"version", quantclaw::kVersion}};
+                {"version", ravbot::kVersion}};
       });
 
   // --- status (alias for gateway.status) ---
@@ -752,12 +868,12 @@ void register_rpc_handlers(
                             {"model", config.agent.model}});
         }
 
-        return {// QuantClaw fields
+        return {// RavBot fields
                 {"running", true},
                 {"port", server.GetPort()},
                 {"connections", server.GetConnectionCount()},
                 {"uptime", server.GetUptimeSeconds()},
-                {"version", quantclaw::kVersion},
+                {"version", ravbot::kVersion},
                 // OpenClaw compatibility fields
                 {"heartbeat",
                  {{"defaultAgentId", "default"},
@@ -928,8 +1044,8 @@ void register_rpc_handlers(
           history_json.push_back(m.ToJsonl());
         }
 
-        quantclaw::SessionCompaction compaction(logger);
-        quantclaw::SessionCompaction::Options opts;
+        ravbot::SessionCompaction compaction(logger);
+        ravbot::SessionCompaction::Options opts;
         opts.max_messages = params.value("maxMessages", 100);
         opts.keep_recent = params.value("keepRecent", 20);
 
@@ -952,11 +1068,11 @@ void register_rpc_handlers(
          logger](const nlohmann::json& /*params*/,
                  ClientConnection& /*client*/) -> nlohmann::json {
           auto workspace_path =
-              std::filesystem::path(quantclaw::platform::home_directory()) /
-              ".quantclaw/agents/main/workspace";
+              std::filesystem::path(ravbot::platform::home_directory()) /
+              ".ravbot/agents/main/workspace";
           std::string managed_dir =
-              (std::filesystem::path(quantclaw::platform::home_directory()) /
-               ".quantclaw" / "skills")
+              (std::filesystem::path(ravbot::platform::home_directory()) /
+               ".ravbot" / "skills")
                   .string();
 
           auto skills = skill_loader->LoadSkills(config.skills, workspace_path);
@@ -1055,7 +1171,7 @@ void register_rpc_handlers(
             throw std::runtime_error("skill name is required");
           }
 
-          quantclaw::SkillMetadata meta;
+          ravbot::SkillMetadata meta;
           meta.name = name;
           meta.root_dir = params.value("rootDir", "");
 
@@ -1271,9 +1387,9 @@ void register_rpc_handlers(
                                                           job.name, "cron");
               auto history_msgs = session_manager->GetHistory(job.session_key);
 
-              std::vector<quantclaw::Message> history;
+              std::vector<ravbot::Message> history;
               for (const auto& m : history_msgs) {
-                quantclaw::Message msg;
+                ravbot::Message msg;
                 msg.role = m.role;
                 msg.content = m.content;
                 history.push_back(msg);
@@ -1285,7 +1401,7 @@ void register_rpc_handlers(
 
               // Store messages
               for (const auto& msg : new_msgs) {
-                quantclaw::SessionMessage sm;
+                ravbot::SessionMessage sm;
                 sm.role = msg.role;
                 sm.content = msg.content;
                 session_manager->AppendMessage(job.session_key, sm);
@@ -1381,13 +1497,13 @@ void register_rpc_handlers(
 
                              std::string decision_str;
                              switch (decision) {
-                               case quantclaw::ApprovalDecision::kApproved:
+                               case ravbot::ApprovalDecision::kApproved:
                                  decision_str = "approved";
                                  break;
-                               case quantclaw::ApprovalDecision::kDenied:
+                               case ravbot::ApprovalDecision::kDenied:
                                  decision_str = "denied";
                                  break;
-                               case quantclaw::ApprovalDecision::kPending:
+                               case ravbot::ApprovalDecision::kPending:
                                  decision_str = "pending";
                                  break;
                                default:
@@ -1408,13 +1524,13 @@ void register_rpc_handlers(
 
           std::string mode_str;
           switch (cfg.ask) {
-            case quantclaw::AskMode::kOff:
+            case ravbot::AskMode::kOff:
               mode_str = "off";
               break;
-            case quantclaw::AskMode::kOnMiss:
+            case ravbot::AskMode::kOnMiss:
               mode_str = "on-miss";
               break;
-            case quantclaw::AskMode::kAlways:
+            case ravbot::AskMode::kAlways:
               mode_str = "always";
               break;
           }
@@ -1602,14 +1718,14 @@ void register_rpc_handlers(
   // --- memory.status ---
   {
     auto workspace =
-        std::filesystem::path(quantclaw::platform::home_directory()) /
-        ".quantclaw/agents/main/workspace";
+        std::filesystem::path(ravbot::platform::home_directory()) /
+        ".ravbot/agents/main/workspace";
 
     server.RegisterHandler(
         methods::kMemoryStatus,
         [workspace, logger](const nlohmann::json& /*params*/,
                             ClientConnection& /*client*/) -> nlohmann::json {
-          quantclaw::MemorySearch search(logger);
+          ravbot::MemorySearch search(logger);
           search.IndexDirectory(workspace);
           return search.Stats();
         });
@@ -1624,7 +1740,7 @@ void register_rpc_handlers(
           if (query.empty()) {
             throw std::runtime_error("query is required");
           }
-          quantclaw::MemorySearch search(logger);
+          ravbot::MemorySearch search(logger);
           search.IndexDirectory(workspace);
           auto results = search.Search(query, max_results);
           nlohmann::json arr = nlohmann::json::array();
@@ -1648,13 +1764,13 @@ void register_rpc_handlers(
                          [](const nlohmann::json& /*params*/,
                             ClientConnection& /*client*/) -> nlohmann::json {
                            return {{"agentId", "main"},
-                                   {"name", "QuantClaw Agent"},
+                                   {"name", "RavBot Agent"},
                                    {"avatar", ""},
                                    {"emoji", "\xF0\x9F\xA6\x9E"}};
                          });
 
   // --- node.list ---
-  // QuantClaw is a single-node deployment; return empty list.
+  // RavBot is a single-node deployment; return empty list.
   server.RegisterHandler("node.list",
                          [](const nlohmann::json& /*params*/,
                             ClientConnection& /*client*/) -> nlohmann::json {
@@ -1723,30 +1839,102 @@ void register_rpc_handlers(
       "config.schema",
       [](const nlohmann::json& /*params*/,
          ClientConnection& /*client*/) -> nlohmann::json {
-        nlohmann::json schema = {
+        const nlohmann::json string_array_schema = {
+            {"type", "array"}, {"items", {{"type", "string"}}}};
+        const nlohmann::json provider_schema = {
             {"type", "object"},
             {"properties",
-             {{"agent",
+             {{"apiKey", {{"type", "string"}}},
+              {"apiKeyEnv", {{"type", "string"}}},
+              {"baseUrl", {{"type", "string"}}},
+              {"api",
+               {{"type", "string"},
+                {"enum", nlohmann::json::array({"openai-completions",
+                                                "openai-responses",
+                                                "anthropic-messages"})}}},
+              {"timeout",
+               {{"type", "integer"}, {"minimum", 1}, {"maximum", 600}}}}}};
+        nlohmann::json provider_properties = nlohmann::json::object();
+        for (const auto& id : {"openai", "anthropic", "openai-codex",
+                               "github-copilot", "ollama", "openrouter",
+                               "qwen", "moonshot"}) {
+          provider_properties[id] = provider_schema;
+        }
+        const nlohmann::json channel_schema = {
+            {"type", "object"},
+            {"properties",
+             {{"enabled", {{"type", "boolean"}, {"default", false}}},
+              {"token", {{"type", "string"}}},
+              {"botToken", {{"type", "string"}}},
+              {"appToken", {{"type", "string"}}},
+              {"appId", {{"type", "string"}}},
+              {"appSecret", {{"type", "string"}}},
+              {"signingSecret", {{"type", "string"}}},
+              {"webhookSecret", {{"type", "string"}}},
+              {"webhookUrl", {{"type", "string"}}},
+              {"baseUrl", {{"type", "string"}}},
+              {"credential", {{"type", "string"}}},
+              {"audience", {{"type", "string"}}},
+              {"publicKey", {{"type", "string"}}},
+              {"privateKey", {{"type", "string"}}},
+              {"relays", string_array_schema},
+              {"allowedIds", string_array_schema},
+              {"sandbox", {{"type", "boolean"}, {"default", false}}},
+              {"groupPolicy",
+               {{"type", "string"},
+                {"enum",
+                 nlohmann::json::array({"mention", "open", "allowlist"})}}},
+              {"dmPolicy",
+               {{"type", "string"},
+                {"enum", nlohmann::json::array({"open", "allowlist", "closed"})}}},
+              {"streamMode", {{"type", "string"}}}}}};
+        nlohmann::json channel_properties = nlohmann::json::object();
+        for (const auto& id :
+             {"discord", "telegram", "whatsapp", "slack", "googlechat",
+              "signal", "imessage", "nostr", "qq"}) {
+          channel_properties[id] = channel_schema;
+        }
+        nlohmann::json schema = {{"type", "object"},
+                                 {"properties", nlohmann::json::object()}};
+        schema["properties"]["agent"] = {
+            {"type", "object"},
+            {"properties",
+             {{"model", {{"type", "string"}}},
+              {"maxIterations",
+               {{"type", "integer"}, {"minimum", 1}, {"maximum", 500}}},
+              {"temperature",
+               {{"type", "number"}, {"minimum", 0}, {"maximum", 2}}},
+              {"maxTokens", {{"type", "integer"}, {"minimum", 1}}},
+              {"thinking",
+               {{"type", "string"},
+                {"enum", nlohmann::json::array(
+                             {"off", "low", "medium", "high"})}}}}}};
+        schema["properties"]["gateway"] = {
+            {"type", "object"},
+            {"properties",
+             {{"port",
+               {{"type", "integer"}, {"minimum", 1}, {"maximum", 65535}}},
+              {"bind", {{"type", "string"}}}}}};
+        schema["properties"]["providers"] = {
+            {"type", "object"},
+            {"properties", provider_properties},
+            {"additionalProperties", provider_schema}};
+        schema["properties"]["models"] = {
+            {"type", "object"},
+            {"properties",
+             {{"providers",
                {{"type", "object"},
-                {"properties",
-                 {{"model", {{"type", "string"}}},
-                  {"maxIterations",
-                   {{"type", "integer"}, {"minimum", 1}, {"maximum", 500}}},
-                  {"temperature",
-                   {{"type", "number"}, {"minimum", 0}, {"maximum", 2}}},
-                  {"maxTokens", {{"type", "integer"}, {"minimum", 1}}},
-                  {"thinking",
-                   {{"type", "string"},
-                    {"enum", nlohmann::json::array(
-                                 {"off", "low", "medium", "high"})}}}}}}},
-              {"gateway",
-               {{"type", "object"},
-                {"properties",
-                 {{"port",
-                   {{"type", "integer"}, {"minimum", 1}, {"maximum", 65535}}},
-                  {"bind", {{"type", "string"}}}}}}}}}};
+                {"properties", provider_properties},
+                {"additionalProperties", provider_schema}}}}}};
+        schema["properties"]["channels"] = {
+            {"type", "object"},
+            {"properties", channel_properties},
+            {"additionalProperties", channel_schema}};
         nlohmann::json ui_hints = {
-            {"agent.model", {{"label", "Model"}, {"group", "Agent"}}},
+            {"agent.model",
+             {{"label", "Preferred Model"},
+              {"help", "Model id used by the main agent, for example openai/gpt-4o-mini."},
+              {"group", "Agent"}}},
             {"agent.maxIterations",
              {{"label", "Max Iterations"}, {"group", "Agent"}}},
             {"agent.temperature",
@@ -1757,7 +1945,88 @@ void register_rpc_handlers(
              {{"label", "Thinking Mode"}, {"group", "Agent"}}},
             {"gateway.port", {{"label", "Port"}, {"group", "Gateway"}}},
             {"gateway.bind",
-             {{"label", "Bind Address"}, {"group", "Gateway"}}}};
+             {{"label", "Bind Address"}, {"group", "Gateway"}}},
+            {"providers.*.apiKey",
+             {{"label", "API Key"},
+              {"help", "Provider API key. Prefer ${ENV_VAR} for shared configs."},
+              {"group", "Providers"},
+              {"order", 1},
+              {"sensitive", true}}},
+            {"providers.*.apiKeyEnv",
+             {{"label", "API Key Env"},
+              {"help", "Environment variable name used when apiKey is empty."},
+              {"group", "Providers"},
+              {"order", 2}}},
+            {"providers.*.baseUrl",
+             {{"label", "Base URL"},
+              {"help", "OpenAI-compatible or provider-specific API endpoint."},
+              {"group", "Providers"},
+              {"order", 3}}},
+            {"providers.*.api",
+             {{"label", "API Type"}, {"group", "Providers"}, {"order", 4}}},
+            {"providers.*.timeout",
+             {{"label", "Timeout Seconds"},
+              {"group", "Providers"},
+              {"order", 5}}},
+            {"models.providers.*.apiKey",
+             {{"label", "API Key"},
+              {"group", "Model Providers"},
+              {"order", 1},
+              {"sensitive", true}}},
+            {"models.providers.*.apiKeyEnv",
+             {{"label", "API Key Env"},
+              {"group", "Model Providers"},
+              {"order", 2}}},
+            {"models.providers.*.baseUrl",
+             {{"label", "Base URL"},
+              {"group", "Model Providers"},
+              {"order", 3}}},
+            {"models.providers.*.api",
+             {{"label", "API Type"},
+              {"group", "Model Providers"},
+              {"order", 4}}},
+            {"models.providers.*.timeout",
+             {{"label", "Timeout Seconds"},
+              {"group", "Model Providers"},
+              {"order", 5}}},
+            {"channels.*.enabled",
+             {{"label", "Enabled"}, {"group", "Channels"}, {"order", 1}}},
+            {"channels.*.token",
+             {{"label", "Token"},
+              {"group", "Channels"},
+              {"order", 2},
+              {"sensitive", true}}},
+            {"channels.*.botToken",
+             {{"label", "Bot Token"},
+              {"group", "Channels"},
+              {"order", 3},
+              {"sensitive", true}}},
+            {"channels.*.appToken",
+             {{"label", "App Token"},
+              {"group", "Channels"},
+              {"order", 4},
+              {"sensitive", true}}},
+            {"channels.*.appSecret",
+             {{"label", "App Secret"},
+              {"group", "Channels"},
+              {"order", 5},
+              {"sensitive", true}}},
+            {"channels.*.signingSecret",
+             {{"label", "Signing Secret"},
+              {"group", "Channels"},
+              {"order", 6},
+              {"sensitive", true}}},
+            {"channels.*.webhookSecret",
+             {{"label", "Webhook Secret"},
+              {"group", "Channels"},
+              {"order", 7},
+              {"sensitive", true}}},
+            {"channels.*.allowedIds",
+             {{"label", "Allowed IDs"}, {"group", "Channels"}, {"order", 20}}},
+            {"channels.*.groupPolicy",
+             {{"label", "Group Policy"}, {"group", "Channels"}, {"order", 30}}},
+            {"channels.*.dmPolicy",
+             {{"label", "DM Policy"}, {"group", "Channels"}, {"order", 31}}}};
         return {{"schema", schema},
                 {"uiHints", ui_hints},
                 {"version", "1"},
@@ -1959,4 +2228,4 @@ void register_rpc_handlers(
   logger->info("Registered {} RPC handlers", handler_count);
 }
 
-}  // namespace quantclaw::gateway
+}  // namespace ravbot::gateway

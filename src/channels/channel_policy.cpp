@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/channels/channel_policy.hpp"
+#include "ravbot/channels/channel_policy.hpp"
 
 #include <algorithm>
 #include <random>
 #include <regex>
 #include <sstream>
 
-namespace quantclaw {
+namespace ravbot {
 
 DmPolicy DmPolicyFromString(const std::string& s) {
   if (s == "pairing")
@@ -204,4 +204,4 @@ bool SessionResolver::ShouldActivateGroup(
   return false;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

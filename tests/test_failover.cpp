@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <chrono>
@@ -7,15 +7,15 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/providers/cooldown_tracker.hpp"
-#include "quantclaw/providers/failover_resolver.hpp"
-#include "quantclaw/providers/provider_error.hpp"
-#include "quantclaw/providers/provider_registry.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/providers/cooldown_tracker.hpp"
+#include "ravbot/providers/failover_resolver.hpp"
+#include "ravbot/providers/provider_error.hpp"
+#include "ravbot/providers/provider_registry.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace quantclaw;
+using namespace ravbot;
 
 // ================================================================
 // ProviderError tests
@@ -369,14 +369,14 @@ TEST(FailoverConfigTest, ParseFallbacks) {
   nlohmann::json j = {{"agent",
                        {{"model", "anthropic/claude-sonnet-4-6"},
                         {"fallbacks", {"openai/gpt-4o", "ollama/llama3"}}}}};
-  auto config = QuantClawConfig::FromJson(j);
+  auto config = RavBotConfig::FromJson(j);
   ASSERT_EQ(config.agent.fallbacks.size(), 2u);
   EXPECT_EQ(config.agent.fallbacks[0], "openai/gpt-4o");
   EXPECT_EQ(config.agent.fallbacks[1], "ollama/llama3");
 }
 
 TEST(FailoverConfigTest, EmptyFallbacks) {
-  auto config = QuantClawConfig::FromJson({});
+  auto config = RavBotConfig::FromJson({});
   EXPECT_TRUE(config.agent.fallbacks.empty());
 }
 
@@ -689,7 +689,7 @@ TEST(FailoverConfigTest, ParseProviderProfiles) {
             {{"id", "backup"},
              {"apiKey", "sk-backup"},
              {"priority", 10}}}}}}}}};
-  auto config = QuantClawConfig::FromJson(j);
+  auto config = RavBotConfig::FromJson(j);
   auto it = config.providers.find("anthropic");
   ASSERT_NE(it, config.providers.end());
   ASSERT_EQ(it->second.profiles.size(), 2u);
@@ -703,7 +703,7 @@ TEST(FailoverConfigTest, ParseProviderProfiles) {
 
 TEST(FailoverConfigTest, NoProfilesFallsBackToSingleKey) {
   nlohmann::json j = {{"providers", {{"openai", {{"apiKey", "sk-test"}}}}}};
-  auto config = QuantClawConfig::FromJson(j);
+  auto config = RavBotConfig::FromJson(j);
   auto it = config.providers.find("openai");
   ASSERT_NE(it, config.providers.end());
   EXPECT_TRUE(it->second.profiles.empty());

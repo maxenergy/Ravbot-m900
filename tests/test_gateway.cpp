@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <atomic>
@@ -11,14 +11,14 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/gateway/gateway_client.hpp"
-#include "quantclaw/gateway/gateway_server.hpp"
-#include "quantclaw/gateway/protocol.hpp"
+#include "ravbot/gateway/gateway_client.hpp"
+#include "ravbot/gateway/gateway_server.hpp"
+#include "ravbot/gateway/protocol.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
 
-using namespace quantclaw::gateway;
+using namespace ravbot::gateway;
 
 class GatewayTest : public ::testing::Test {
  protected:
@@ -40,7 +40,7 @@ class GatewayTest : public ::testing::Test {
   }
 
   int find_free_port() {
-    return quantclaw::test::FindFreePort();
+    return ravbot::test::FindFreePort();
   }
 
   std::shared_ptr<spdlog::logger> logger_;
@@ -54,7 +54,7 @@ TEST_F(GatewayTest, ServerStartStop) {
   server_ = std::make_unique<GatewayServer>(port, logger_);
 
   EXPECT_FALSE(server_->IsRunning());
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
   EXPECT_TRUE(server_->IsRunning());
   EXPECT_EQ(server_->GetPort(), port);
@@ -67,7 +67,7 @@ TEST_F(GatewayTest, ServerStartStop) {
 TEST_F(GatewayTest, UptimeIncreases) {
   int port = find_free_port();
   server_ = std::make_unique<GatewayServer>(port, logger_);
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
 
   EXPECT_GE(server_->GetUptimeSeconds(), 0);
@@ -107,9 +107,9 @@ TEST_F(GatewayTest, ClientConnectAndCall) {
         return {{"echo", params.value("msg", "")}};
       });
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   // Create client
@@ -137,9 +137,9 @@ TEST_F(GatewayTest, HealthRpc) {
         return {{"status", "ok"}, {"version", "0.2.0"}};
       });
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   std::string url = "ws://127.0.0.1:" + std::to_string(port);
@@ -156,9 +156,9 @@ TEST_F(GatewayTest, HealthRpc) {
 TEST_F(GatewayTest, UnknownMethodReturnsError) {
   int port = find_free_port();
   server_ = std::make_unique<GatewayServer>(port, logger_);
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   std::string url = "ws://127.0.0.1:" + std::to_string(port);
@@ -182,9 +182,9 @@ TEST_F(GatewayTest, MultipleClients) {
         return {{"pong", true}};
       });
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   std::string url = "ws://127.0.0.1:" + std::to_string(port);
@@ -213,9 +213,9 @@ TEST_F(GatewayTest, MultipleClients) {
 TEST_F(GatewayTest, BroadcastEvent) {
   int port = find_free_port();
   server_ = std::make_unique<GatewayServer>(port, logger_);
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   std::string url = "ws://127.0.0.1:" + std::to_string(port);
@@ -261,9 +261,9 @@ TEST_F(GatewayTest, AuthModeNoneAllowsAll) {
         return {{"pong", true}};
       });
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   std::string url = "ws://127.0.0.1:" + std::to_string(port);
@@ -287,9 +287,9 @@ TEST_F(GatewayTest, AuthTokenValidationSuccess) {
         return {{"pong", true}};
       });
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   // Client with correct token
@@ -314,9 +314,9 @@ TEST_F(GatewayTest, AuthTokenValidationFailure) {
         return {{"pong", true}};
       });
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   // Client with wrong token — hello should fail, subsequent RPC should fail
@@ -352,9 +352,9 @@ TEST_F(GatewayTest, BuildSnapshotContainsExpectedFields) {
   int port = find_free_port();
   server_ = std::make_unique<GatewayServer>(port, logger_);
   server_->SetAuth("none", "");
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   auto snapshot = server_->BuildSnapshot();
@@ -375,9 +375,9 @@ TEST_F(GatewayTest, HelloResponseContainsSnapshot) {
   int port = find_free_port();
   server_ = std::make_unique<GatewayServer>(port, logger_);
   server_->SetAuth("none", "");
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   // Connect a client — the hello-ok response should contain a snapshot
@@ -411,9 +411,9 @@ TEST_F(GatewayTest, BroadcastDuringConcurrentDisconnect) {
   // disconnected clients).
   int port = find_free_port();
   server_ = std::make_unique<GatewayServer>(port, logger_);
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   std::string url = "ws://127.0.0.1:" + std::to_string(port);
@@ -478,9 +478,9 @@ TEST_F(GatewayTest, SendToDisconnectedClient) {
         return {{"ok", true}};
       });
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   std::string url = "ws://127.0.0.1:" + std::to_string(port);

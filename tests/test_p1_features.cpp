@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 //
 // Tests for P1 features:
@@ -14,21 +14,21 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/constants.hpp"
-#include "quantclaw/core/agent_loop.hpp"
-#include "quantclaw/core/context_pruner.hpp"
-#include "quantclaw/core/memory_manager.hpp"
-#include "quantclaw/core/skill_loader.hpp"
-#include "quantclaw/core/usage_accumulator.hpp"
-#include "quantclaw/providers/llm_provider.hpp"
-#include "quantclaw/providers/provider_error.hpp"
-#include "quantclaw/tools/tool_registry.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/constants.hpp"
+#include "ravbot/core/agent_loop.hpp"
+#include "ravbot/core/context_pruner.hpp"
+#include "ravbot/core/memory_manager.hpp"
+#include "ravbot/core/skill_loader.hpp"
+#include "ravbot/core/usage_accumulator.hpp"
+#include "ravbot/providers/llm_provider.hpp"
+#include "ravbot/providers/provider_error.hpp"
+#include "ravbot/tools/tool_registry.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
 
-using namespace quantclaw;
+using namespace ravbot;
 
 // =============================================================================
 // P1 #16: Usage Accumulator
@@ -236,7 +236,7 @@ class OverflowMockProvider : public LLMProvider {
 class P1AgentLoopTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_p1_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_p1_test");
 
     auto null_sink = std::make_shared<spdlog::sinks::null_sink_mt>();
     logger_ = std::make_shared<spdlog::logger>("test", null_sink);

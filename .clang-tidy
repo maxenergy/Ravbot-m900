@@ -1,5 +1,5 @@
 ---
-# QuantClaw clang-tidy configuration
+# RavBot clang-tidy configuration
 # Based on Google C++ Style Guide conventions.
 #
 # IMPORTANT: Do NOT place comments (# ...) inside the Checks YAML string.
@@ -16,7 +16,7 @@
 # bugprone-implicit-widening-of-multiplication-result:
 #   Common in numeric buffer-size arithmetic; not yet audited.
 # bugprone-reserved-identifier:
-#   _r_ used in QC_TRY macro — single-use internal name.
+#   _r_ used in RAVBOT_TRY macro — single-use internal name.
 # bugprone-signed-char-misuse:
 #   Not yet investigated; enable once codebase is audited.
 # bugprone-branch-clone:
@@ -156,13 +156,13 @@ Checks: >-
 
 WarningsAsErrors: '*'
 
-# Only lint QuantClaw's own headers; ignore third-party / generated files.
-HeaderFilterRegex: '(include/quantclaw/.+\.hpp|src/.+\.(hpp|h))'
+# Only lint RavBot's own headers; ignore third-party / generated files.
+HeaderFilterRegex: '(include/ravbot/.+\.hpp|src/.+\.(hpp|h))'
 
 AnalyzeTemporaryDtors: true
 
 CheckOptions:
-  # Naming conventions (Google C++ Style Guide, adapted for QuantClaw)
+  # Naming conventions (Google C++ Style Guide, adapted for RavBot)
   - { key: readability-identifier-naming.ClassCase,              value: CamelCase  }
   - { key: readability-identifier-naming.EnumCase,               value: CamelCase  }
   - { key: readability-identifier-naming.FunctionCase,           value: CamelCase  }
@@ -180,7 +180,7 @@ CheckOptions:
   - { key: readability-identifier-naming.EnumConstantPrefix,     value: k          }
 
   - { key: readability-identifier-naming.GlobalVariableCase,     value: lower_case }
-  - { key: readability-identifier-naming.GlobalVariablePrefix,   value: g_qc_      }
+  - { key: readability-identifier-naming.GlobalVariablePrefix,   value: g_ravbot_      }
   - { key: readability-identifier-naming.VariableCase,           value: lower_case }
 
   - { key: readability-identifier-naming.PublicMethodCase,       value: CamelCase  }

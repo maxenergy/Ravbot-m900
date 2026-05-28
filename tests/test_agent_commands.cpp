@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 //
 // Integration tests for AgentCommands: spins up an in-process mock gateway
@@ -16,49 +16,49 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/cli/agent_commands.hpp"
-#include "quantclaw/config.hpp"
-#include "quantclaw/core/agent_loop.hpp"
-#include "quantclaw/core/memory_manager.hpp"
-#include "quantclaw/core/prompt_builder.hpp"
-#include "quantclaw/core/skill_loader.hpp"
-#include "quantclaw/gateway/gateway_client.hpp"
-#include "quantclaw/gateway/gateway_server.hpp"
-#include "quantclaw/gateway/protocol.hpp"
-#include "quantclaw/providers/llm_provider.hpp"
-#include "quantclaw/session/session_manager.hpp"
-#include "quantclaw/tools/tool_registry.hpp"
+#include "ravbot/cli/agent_commands.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/core/agent_loop.hpp"
+#include "ravbot/core/memory_manager.hpp"
+#include "ravbot/core/prompt_builder.hpp"
+#include "ravbot/core/skill_loader.hpp"
+#include "ravbot/gateway/gateway_client.hpp"
+#include "ravbot/gateway/gateway_server.hpp"
+#include "ravbot/gateway/protocol.hpp"
+#include "ravbot/providers/llm_provider.hpp"
+#include "ravbot/session/session_manager.hpp"
+#include "ravbot/tools/tool_registry.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
 
 // Forward declare register_rpc_handlers
-namespace quantclaw {
+namespace ravbot {
 class ProviderRegistry;
 class CronScheduler;
 class ExecApprovalManager;
 class PluginSystem;
-}  // namespace quantclaw
-namespace quantclaw::gateway {
+}  // namespace ravbot
+namespace ravbot::gateway {
 class CommandQueue;
 void register_rpc_handlers(
     GatewayServer& server,
-    std::shared_ptr<quantclaw::SessionManager> session_manager,
-    std::shared_ptr<quantclaw::AgentLoop> agent_loop,
-    std::shared_ptr<quantclaw::PromptBuilder> prompt_builder,
-    std::shared_ptr<quantclaw::ToolRegistry> tool_registry,
-    const quantclaw::QuantClawConfig& config,
+    std::shared_ptr<ravbot::SessionManager> session_manager,
+    std::shared_ptr<ravbot::AgentLoop> agent_loop,
+    std::shared_ptr<ravbot::PromptBuilder> prompt_builder,
+    std::shared_ptr<ravbot::ToolRegistry> tool_registry,
+    const ravbot::RavBotConfig& config,
     std::shared_ptr<spdlog::logger> logger,
     std::function<void()> reload_fn = nullptr,
-    std::shared_ptr<quantclaw::ProviderRegistry> provider_registry = nullptr,
-    std::shared_ptr<quantclaw::SkillLoader> skill_loader = nullptr,
-    std::shared_ptr<quantclaw::CronScheduler> cron_scheduler = nullptr,
-    std::shared_ptr<quantclaw::ExecApprovalManager> exec_approval_mgr = nullptr,
-    quantclaw::PluginSystem* plugin_system = nullptr,
-    quantclaw::gateway::CommandQueue* command_queue = nullptr,
+    std::shared_ptr<ravbot::ProviderRegistry> provider_registry = nullptr,
+    std::shared_ptr<ravbot::SkillLoader> skill_loader = nullptr,
+    std::shared_ptr<ravbot::CronScheduler> cron_scheduler = nullptr,
+    std::shared_ptr<ravbot::ExecApprovalManager> exec_approval_mgr = nullptr,
+    ravbot::PluginSystem* plugin_system = nullptr,
+    ravbot::gateway::CommandQueue* command_queue = nullptr,
     std::string log_file_path = {},
     std::function<std::vector<std::string>()> running_adapters_fn = {});
-}  // namespace quantclaw::gateway
+}  // namespace ravbot::gateway
 
 // --- Capture helpers ---
 // Use C++ stream redirection instead of fd-level dup2 to avoid
@@ -94,37 +94,37 @@ static std::string capture_stderr(std::function<void()> fn) {
 
 // --- Mock LLM Provider ---
 
-class AgentCmdMockLLM : public quantclaw::LLMProvider {
+class AgentCmdMockLLM : public ravbot::LLMProvider {
  public:
   std::string response_text = "Mock agent response.";
   bool stream_should_fail = false;
   bool stream_emit_delta = true;
   std::string stream_error_message = "Mock streaming failure.";
 
-  quantclaw::ChatCompletionResponse
-  ChatCompletion(const quantclaw::ChatCompletionRequest& /*req*/) override {
-    quantclaw::ChatCompletionResponse resp;
+  ravbot::ChatCompletionResponse
+  ChatCompletion(const ravbot::ChatCompletionRequest& /*req*/) override {
+    ravbot::ChatCompletionResponse resp;
     resp.content = response_text;
     resp.finish_reason = "stop";
     return resp;
   }
 
   void ChatCompletionStream(
-      const quantclaw::ChatCompletionRequest& /*req*/,
-      std::function<void(const quantclaw::ChatCompletionResponse&)> cb)
+      const ravbot::ChatCompletionRequest& /*req*/,
+      std::function<void(const ravbot::ChatCompletionResponse&)> cb)
       override {
     if (stream_should_fail) {
       throw std::runtime_error(stream_error_message);
     }
 
     if (stream_emit_delta) {
-      quantclaw::ChatCompletionResponse delta;
+      ravbot::ChatCompletionResponse delta;
       delta.content = response_text;
       delta.is_stream_end = false;
       cb(delta);
     }
 
-    quantclaw::ChatCompletionResponse end;
+    ravbot::ChatCompletionResponse end;
     end.content = response_text;
     end.is_stream_end = true;
     end.finish_reason = "stop";
@@ -144,9 +144,9 @@ class AgentCmdMockLLM : public quantclaw::LLMProvider {
 class AgentCommandsIntegrationTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    port_ = quantclaw::test::FindFreePort();
+    port_ = ravbot::test::FindFreePort();
     ASSERT_NE(port_, 0) << "Failed to reserve a free TCP port";
-    test_dir_ = quantclaw::test::MakeTestDir("agent_cmd_test");
+    test_dir_ = ravbot::test::MakeTestDir("agent_cmd_test");
     workspace_dir_ = test_dir_ / "workspace";
     sessions_dir_ = test_dir_ / "sessions";
     std::filesystem::create_directories(workspace_dir_);
@@ -164,39 +164,39 @@ class AgentCommandsIntegrationTest : public ::testing::Test {
     config_.gateway.auth.token = "";
 
     memory_manager_ =
-        std::make_shared<quantclaw::MemoryManager>(workspace_dir_, logger_);
-    skill_loader_ = std::make_shared<quantclaw::SkillLoader>(logger_);
-    tool_registry_ = std::make_shared<quantclaw::ToolRegistry>(logger_);
+        std::make_shared<ravbot::MemoryManager>(workspace_dir_, logger_);
+    skill_loader_ = std::make_shared<ravbot::SkillLoader>(logger_);
+    tool_registry_ = std::make_shared<ravbot::ToolRegistry>(logger_);
     tool_registry_->RegisterBuiltinTools();
 
     mock_llm_ = std::make_shared<AgentCmdMockLLM>();
-    agent_loop_ = std::make_shared<quantclaw::AgentLoop>(
+    agent_loop_ = std::make_shared<ravbot::AgentLoop>(
         memory_manager_, skill_loader_, tool_registry_, mock_llm_,
         config_.agent, logger_);
     session_manager_ =
-        std::make_shared<quantclaw::SessionManager>(sessions_dir_, logger_);
-    prompt_builder_ = std::make_shared<quantclaw::PromptBuilder>(
+        std::make_shared<ravbot::SessionManager>(sessions_dir_, logger_);
+    prompt_builder_ = std::make_shared<ravbot::PromptBuilder>(
         memory_manager_, skill_loader_, tool_registry_);
 
     server_ =
-        std::make_unique<quantclaw::gateway::GatewayServer>(port_, logger_);
+        std::make_unique<ravbot::gateway::GatewayServer>(port_, logger_);
     server_->SetAuth(config_.gateway.auth.mode, config_.gateway.auth.token);
-    quantclaw::gateway::register_rpc_handlers(*server_, session_manager_,
+    ravbot::gateway::register_rpc_handlers(*server_, session_manager_,
                                               agent_loop_, prompt_builder_,
                                               tool_registry_, config_, logger_);
-    quantclaw::test::ReleaseHeldPorts();
+    ravbot::test::ReleaseHeldPorts();
     server_->Start();
 
     // Wait until the server actually accepts connections instead of a
     // blind sleep.  Under heavy CI load or TSan slowdown the previous
     // 200 ms was sometimes not enough, causing flaky timeouts.
-    ASSERT_TRUE(quantclaw::test::WaitForServerReady(port_, 5000))
+    ASSERT_TRUE(ravbot::test::WaitForServerReady(port_, 5000))
         << "Server not ready on port " << port_;
 
     // Prepare AgentCommands pointing at our mock gateway.
     // Use a 30 s timeout instead of the production default (120 s) so that
     // a stuck test fails fast rather than exhausting the ctest timeout.
-    agent_cmds_ = std::make_unique<quantclaw::cli::AgentCommands>(logger_);
+    agent_cmds_ = std::make_unique<ravbot::cli::AgentCommands>(logger_);
     agent_cmds_->SetGatewayUrl("ws://127.0.0.1:" + std::to_string(port_));
     agent_cmds_->SetDefaultTimeoutMs(30000);
   }
@@ -216,16 +216,16 @@ class AgentCommandsIntegrationTest : public ::testing::Test {
   std::filesystem::path workspace_dir_;
   std::filesystem::path sessions_dir_;
   std::shared_ptr<spdlog::logger> logger_;
-  quantclaw::QuantClawConfig config_;
-  std::shared_ptr<quantclaw::MemoryManager> memory_manager_;
-  std::shared_ptr<quantclaw::SkillLoader> skill_loader_;
-  std::shared_ptr<quantclaw::ToolRegistry> tool_registry_;
+  ravbot::RavBotConfig config_;
+  std::shared_ptr<ravbot::MemoryManager> memory_manager_;
+  std::shared_ptr<ravbot::SkillLoader> skill_loader_;
+  std::shared_ptr<ravbot::ToolRegistry> tool_registry_;
   std::shared_ptr<AgentCmdMockLLM> mock_llm_;
-  std::shared_ptr<quantclaw::AgentLoop> agent_loop_;
-  std::shared_ptr<quantclaw::SessionManager> session_manager_;
-  std::shared_ptr<quantclaw::PromptBuilder> prompt_builder_;
-  std::unique_ptr<quantclaw::gateway::GatewayServer> server_;
-  std::unique_ptr<quantclaw::cli::AgentCommands> agent_cmds_;
+  std::shared_ptr<ravbot::AgentLoop> agent_loop_;
+  std::shared_ptr<ravbot::SessionManager> session_manager_;
+  std::shared_ptr<ravbot::PromptBuilder> prompt_builder_;
+  std::unique_ptr<ravbot::gateway::GatewayServer> server_;
+  std::unique_ptr<ravbot::cli::AgentCommands> agent_cmds_;
 };
 
 // ========== Scenario 1: basic -m flag ==========
@@ -410,26 +410,26 @@ TEST_F(AgentCommandsIntegrationTest, AuthTokenMismatchReturnsError) {
   server_->Stop();
   server_.reset();
 
-  int auth_port = quantclaw::test::FindFreePort();
+  int auth_port = ravbot::test::FindFreePort();
   auto auth_config = config_;
   auth_config.gateway.port = auth_port;
   auth_config.gateway.auth.mode = "token";
   auth_config.gateway.auth.token = "secret123";
 
   server_ =
-      std::make_unique<quantclaw::gateway::GatewayServer>(auth_port, logger_);
+      std::make_unique<ravbot::gateway::GatewayServer>(auth_port, logger_);
   server_->SetAuth(auth_config.gateway.auth.mode,
                    auth_config.gateway.auth.token);
-  quantclaw::gateway::register_rpc_handlers(
+  ravbot::gateway::register_rpc_handlers(
       *server_, session_manager_, agent_loop_, prompt_builder_, tool_registry_,
       auth_config, logger_);
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(auth_port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(auth_port, 5000))
       << "Server not ready on port " << auth_port;
 
   // Agent without auth token
-  auto no_auth_cmds = std::make_unique<quantclaw::cli::AgentCommands>(logger_);
+  auto no_auth_cmds = std::make_unique<ravbot::cli::AgentCommands>(logger_);
   no_auth_cmds->SetGatewayUrl("ws://127.0.0.1:" + std::to_string(auth_port));
   // Don't set auth token
 

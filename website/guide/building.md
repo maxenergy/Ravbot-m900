@@ -1,6 +1,6 @@
 # Building from Source
 
-Complete guide to building QuantClaw from source code.
+Complete guide to building RavBot from source code.
 
 ## Prerequisites
 
@@ -42,8 +42,8 @@ brew install cmake ninja pkg-config git spdlog openssl@3 curl node
 ## Clone Repository
 
 ```bash
-git clone https://github.com/QuantClaw/quantclaw.git
-cd quantclaw
+git clone https://github.com/RavBot/ravbot.git
+cd ravbot
 
 # Optional: Check out specific version
 git checkout v1.0.0
@@ -102,13 +102,13 @@ cmake --build . --config Release -j $env:NUMBER_OF_PROCESSORS
 
 ```bash
 # Run tests
-./quantclaw_tests
+./ravbot_tests
 
 # Or on Windows
-.\Release\quantclaw_tests.exe
+.\Release\ravbot_tests.exe
 
 # Check installation
-quantclaw --version
+ravbot --version
 ```
 
 ## Build Options
@@ -263,7 +263,7 @@ cmake -DCMAKE_SYSTEM_NAME=Darwin \
 ### Using Official Docker Image
 
 ```bash
-docker run -v $(pwd):/workspace quantclaw:build-env \
+docker run -v $(pwd):/workspace ravbot:build-env \
   bash -c "cd /workspace && \
            mkdir build && cd build && \
            cmake .. && \
@@ -273,10 +273,10 @@ docker run -v $(pwd):/workspace quantclaw:build-env \
 ### Building Docker Image
 
 ```bash
-docker build -f Dockerfile -t quantclaw:latest .
+docker build -f Dockerfile -t ravbot:latest .
 
 # Run in container
-docker run -it quantclaw:latest quantclaw --version
+docker run -it ravbot:latest ravbot --version
 ```
 
 ## Troubleshooting Build Issues
@@ -383,7 +383,7 @@ cmake --build . -j1
 
 ```bash
 cd build
-./quantclaw_tests
+./ravbot_tests
 
 # Or with cmake
 cmake --build . --target test
@@ -393,15 +393,15 @@ ctest --verbose
 ### Specific Test
 
 ```bash
-./quantclaw_tests --gtest_filter="TestName*"
+./ravbot_tests --gtest_filter="TestName*"
 
 # List available tests
-./quantclaw_tests --gtest_list_tests
+./ravbot_tests --gtest_list_tests
 ```
 
 ### Coverage Report
 
-QuantClaw does not currently expose a dedicated `ENABLE_COVERAGE` CMake option.
+RavBot does not currently expose a dedicated `ENABLE_COVERAGE` CMake option.
 If you need coverage, configure a separate build directory with your compiler's
 coverage flags and run `ctest` there.
 
@@ -409,14 +409,14 @@ coverage flags and run `ctest` there.
 
 ### Build with Profiling
 
-QuantClaw does not currently expose a dedicated `ENABLE_PROFILING` CMake option.
+RavBot does not currently expose a dedicated `ENABLE_PROFILING` CMake option.
 Use your platform profiler against a normal `Debug` or `RelWithDebInfo` build.
 
 ### Memory Profiling
 
 ```bash
 # Valgrind
-valgrind --leak-check=full ./quantclaw agent
+valgrind --leak-check=full ./ravbot agent
 
 # Then use your profiler of choice on the resulting binary
 ```
@@ -452,11 +452,11 @@ cmake --build . --parallel
 ```bash
 # Edit code
 # Build and test
-cmake --build . && ./quantclaw_tests
+cmake --build . && ./ravbot_tests
 
 # Or use a file watcher
 find src include -name "*.cpp" -o -name "*.hpp" | \
-  entr bash -c "cmake --build build && ./build/quantclaw_tests"
+  entr bash -c "cmake --build build && ./build/ravbot_tests"
 ```
 
 ### Git Workflow
@@ -503,7 +503,7 @@ When contributing code:
 
 1. **Follow style guide**: See `.clang-format` and use the repository formatter entrypoint
 2. **Write tests**: Add tests for new features
-3. **Run full build**: `cmake --build . && ./quantclaw_tests`
+3. **Run full build**: `cmake --build . && ./ravbot_tests`
 4. **Format code**: `./scripts/format-code.sh` (or `./scripts/format-code.sh --check` to mirror CI's `clang-format-18` check)
 5. **Check compliance**: `cmake --build . --target clang-tidy`
 

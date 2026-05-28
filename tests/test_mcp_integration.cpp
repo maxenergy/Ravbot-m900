@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <filesystem>
@@ -8,39 +8,39 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/mcp/mcp_server.hpp"
-#include "quantclaw/tools/tool_registry.hpp"
+#include "ravbot/mcp/mcp_server.hpp"
+#include "ravbot/tools/tool_registry.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
 
 // Simple MCP tool backed by ToolRegistry
-class RegistryBackedTool : public quantclaw::mcp::MCPTool {
+class RegistryBackedTool : public ravbot::mcp::MCPTool {
  public:
   RegistryBackedTool(const std::string& name, const std::string& description,
-                     quantclaw::ToolRegistry* registry)
+                     ravbot::ToolRegistry* registry)
       : MCPTool(name, description), registry_(registry) {}
 
  private:
   std::string execute(const nlohmann::json& arguments) override {
     return registry_->ExecuteTool(GetName(), arguments);
   }
-  quantclaw::ToolRegistry* registry_;
+  ravbot::ToolRegistry* registry_;
 };
 
 class MCPIntegrationTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_mcp_integ_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_mcp_integ_test");
 
     auto null_sink = std::make_shared<spdlog::sinks::null_sink_mt>();
     logger_ = std::make_shared<spdlog::logger>("test", null_sink);
 
-    tool_registry_ = std::make_unique<quantclaw::ToolRegistry>(logger_);
+    tool_registry_ = std::make_unique<ravbot::ToolRegistry>(logger_);
     tool_registry_->RegisterBuiltinTools();
     tool_registry_->SetWorkspace(test_dir_.string());
 
-    mcp_server_ = std::make_unique<quantclaw::mcp::MCPServer>(logger_);
+    mcp_server_ = std::make_unique<ravbot::mcp::MCPServer>(logger_);
 
     // Register tools from tool registry into MCP server
     auto schemas = tool_registry_->GetToolSchemas();
@@ -58,8 +58,8 @@ class MCPIntegrationTest : public ::testing::Test {
 
   std::filesystem::path test_dir_;
   std::shared_ptr<spdlog::logger> logger_;
-  std::unique_ptr<quantclaw::ToolRegistry> tool_registry_;
-  std::unique_ptr<quantclaw::mcp::MCPServer> mcp_server_;
+  std::unique_ptr<ravbot::ToolRegistry> tool_registry_;
+  std::unique_ptr<ravbot::mcp::MCPServer> mcp_server_;
 };
 
 TEST_F(MCPIntegrationTest, ListTools) {

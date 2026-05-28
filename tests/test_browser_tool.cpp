@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/tools/browser_tool.hpp"
+#include "ravbot/tools/browser_tool.hpp"
 
 #include <gtest/gtest.h>
 
-namespace quantclaw {
+namespace ravbot {
 
 static std::shared_ptr<spdlog::logger> make_logger(const std::string& name) {
   auto null_sink = std::make_shared<spdlog::sinks::null_sink_mt>();
@@ -217,4 +217,4 @@ TEST(BrowserSessionTest, PageState) {
   EXPECT_EQ(state.request_count, 0);
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

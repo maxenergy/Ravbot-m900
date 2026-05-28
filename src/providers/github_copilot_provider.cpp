@@ -1,11 +1,11 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/providers/github_copilot_provider.hpp"
+#include "ravbot/providers/github_copilot_provider.hpp"
 
 #include <chrono>
 
-namespace quantclaw {
+namespace ravbot {
 namespace {
 
 constexpr char kCopilotUserAgent[] = "GithubCopilot/1.155.0";
@@ -70,4 +70,4 @@ CurlSlist GitHubCopilotProvider::CreateHeaders() const {
   return headers;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

@@ -37,8 +37,8 @@ sudo apt-get install -y \
   zlib1g-dev
 
 # 克隆仓库
-git clone https://github.com/QuantClaw/QuantClaw.git
-cd QuantClaw
+git clone https://github.com/RavBot/RavBot.git
+cd RavBot
 
 # 编译
 mkdir build && cd build
@@ -49,7 +49,7 @@ cmake --build . --parallel
 sudo cmake --install .
 
 # 运行测试
-./quantclaw_tests
+./ravbot_tests
 ```
 
 #### 使用 Docker
@@ -57,19 +57,19 @@ sudo cmake --install .
 ```bash
 # 先构建镜像（参见 scripts/ 目录）
 VERSION=$(cat scripts/DOCKER_VERSION)
-docker build -f scripts/Dockerfile -t quantclaw:$VERSION -t quantclaw:latest .
+docker build -f scripts/Dockerfile -t ravbot:$VERSION -t ravbot:latest .
 
 # 运行容器
 docker run -d \
-  --name quantclaw \
+  --name ravbot \
   -p 18800:18800 \
   -p 18801:18801 \
   -e OPENAI_API_KEY=sk-... \
-  -v quantclaw_data:/home/quantclaw/.quantclaw \
-  quantclaw:latest
+  -v ravbot_data:/home/ravbot/.ravbot \
+  ravbot:latest
 
 # 查看日志
-docker logs quantclaw
+docker logs ravbot
 ```
 
 ### Fedora / CentOS / RHEL
@@ -80,8 +80,8 @@ sudo dnf groupinstall "Development Tools" -y
 sudo dnf install cmake openssl-devel spdlog-devel -y
 
 # 从源码编译
-git clone https://github.com/QuantClaw/QuantClaw.git
-cd QuantClaw
+git clone https://github.com/RavBot/RavBot.git
+cd RavBot
 mkdir build && cd build
 cmake ..
 cmake --build . --parallel
@@ -92,8 +92,8 @@ sudo cmake --install .
 
 ```bash
 # 从源码编译
-git clone https://github.com/QuantClaw/QuantClaw.git
-cd QuantClaw
+git clone https://github.com/RavBot/RavBot.git
+cd RavBot
 mkdir build && cd build
 cmake ..
 cmake --build . --parallel
@@ -118,7 +118,7 @@ wsl --install
 ```bash
 wsl
 cd ~
-git clone https://github.com/QuantClaw/QuantClaw.git
+git clone https://github.com/RavBot/RavBot.git
 # ... 按照 Linux 编译步骤继续
 ```
 
@@ -133,8 +133,8 @@ git clone https://github.com/QuantClaw/QuantClaw.git
 
 ```batch
 REM 克隆仓库
-git clone https://github.com/QuantClaw/QuantClaw.git
-cd QuantClaw
+git clone https://github.com/RavBot/RavBot.git
+cd RavBot
 
 REM 创建构建目录
 mkdir build
@@ -147,7 +147,7 @@ REM 编译
 cmake --build . --config Release -j %NUMBER_OF_PROCESSORS%
 
 REM 测试
-Release\quantclaw_tests.exe
+Release\ravbot_tests.exe
 ```
 
 **依赖（vcpkg）：**
@@ -165,7 +165,7 @@ Windows 环境下，Gateway 服务启动需要特殊处理：
 
 ```powershell
 # 以管理员身份运行 PowerShell
-cd path\to\QuantClaw
+cd path\to\RavBot
 powershell -ExecutionPolicy Bypass -File scripts\gateway-setup-windows.ps1
 ```
 
@@ -182,7 +182,7 @@ REM 双击运行或在命令行执行
 scripts\gateway-manual.bat
 
 REM 或直接运行
-build\Release\quantclaw.exe gateway run
+build\Release\ravbot.exe gateway run
 ```
 
 **方案三：WSL2 替代方案**
@@ -195,7 +195,7 @@ wsl --install
 
 # 在 WSL2 中使用 Linux 安装方式
 wsl
-cd ~/QuantClaw
+cd ~/RavBot
 # ... 按照 Linux 编译步骤继续
 ```
 
@@ -207,11 +207,11 @@ A: Windows 上的 `gateway install` 当前仅创建后台进程，不会自动�
 
 **Q: 端口被占用？**
 
-A: 修改配置文件 `~\.quantclaw\quantclaw.json` 中的 `gateway.port` 值。
+A: 修改配置文件 `~\.ravbot\ravbot.json` 中的 `gateway.port` 值。
 
 **Q: 杀毒软件拦截？**
 
-A: 将 `quantclaw.exe` 添加到杀毒软件白名单。
+A: 将 `ravbot.exe` 添加到杀毒软件白名单。
 
 > **Windows 兼容性说明：**
 > - `NOMINMAX` 会自动定义，避免 Windows API 宏与 `std::min`/`std::max` 冲突。
@@ -224,12 +224,12 @@ A: 将 `quantclaw.exe` 添加到杀毒软件白名单。
 ### 推荐：安装脚本
 
 ```bash
-git clone https://github.com/QuantClaw/QuantClaw.git
-cd QuantClaw
+git clone https://github.com/RavBot/RavBot.git
+cd RavBot
 bash scripts/install.sh --user
 ```
 
-这会把 `quantclaw` 安装到 `~/.quantclaw/bin`，执行 `onboard --quick`，并把 launchd 服务定义写到 `~/Library/LaunchAgents/com.quantclaw.gateway.plist`。
+这会把 `ravbot` 安装到 `~/.ravbot/bin`，执行 `onboard --quick`，并把 launchd 服务定义写到 `~/Library/LaunchAgents/com.ravbot.gateway.plist`。
 
 ### 从源码编译（手动）
 
@@ -238,8 +238,8 @@ bash scripts/install.sh --user
 brew install cmake ninja pkg-config git spdlog openssl@3 curl node
 
 # 编译
-git clone https://github.com/QuantClaw/QuantClaw.git
-cd QuantClaw
+git clone https://github.com/RavBot/RavBot.git
+cd RavBot
 
 # 推荐：使用脚本构建
 ./scripts/build.sh --tests
@@ -248,7 +248,7 @@ cd QuantClaw
 ctest --test-dir build --output-on-failure
 
 # 可选：安装后台服务定义
-./build/quantclaw gateway install
+./build/ravbot gateway install
 ```
 
 如果你更想手动执行 CMake，可显式传入 Homebrew 前缀：
@@ -266,41 +266,41 @@ cmake --build build --parallel
 
 ```bash
 # 交互式设置（推荐）
-quantclaw onboard
+ravbot onboard
 
 # 快速设置（使用默认值）
-quantclaw onboard --quick
+ravbot onboard --quick
 ```
 
-初始化过程中会创建配置文件、工作空间和网关认证 token。Provider 的 API Key 请随后手动写入 `~/.quantclaw/quantclaw.json`。
+初始化过程中会创建配置文件、工作空间和网关认证 token。Provider 的 API Key 请随后手动写入 `~/.ravbot/ravbot.json`。
 
 ### 验证安装
 
 ```bash
 # 检查版本
-quantclaw --version
+ravbot --version
 
 # 运行诊断
-quantclaw doctor
+ravbot doctor
 
 # 测试基本功能（需先启动网关）
-quantclaw gateway &
-quantclaw agent "你好，你是谁？"
+ravbot gateway &
+ravbot agent "你好，你是谁？"
 ```
 
 ### 配置环境变量（可选）
 
 ```bash
-export QUANTCLAW_LOG_LEVEL=debug
-export QUANTCLAW_GATEWAY_PORT=18800
+export RAVBOT_LOG_LEVEL=debug
+export RAVBOT_GATEWAY_PORT=18800
 ```
 
-## 更新 QuantClaw
+## 更新 RavBot
 
 ### 从源码更新
 
 ```bash
-cd QuantClaw
+cd RavBot
 git pull origin main
 cd build
 cmake --build . --parallel
@@ -311,17 +311,17 @@ sudo cmake --install .
 
 ```bash
 # 重新构建镜像
-docker build -f scripts/Dockerfile -t quantclaw:latest .
-docker stop quantclaw && docker rm quantclaw
+docker build -f scripts/Dockerfile -t ravbot:latest .
+docker stop ravbot && docker rm ravbot
 
 # 使用新镜像重新运行
 docker run -d \
-  --name quantclaw \
+  --name ravbot \
   -p 18800:18800 \
   -p 18801:18801 \
   -e OPENAI_API_KEY=sk-... \
-  -v quantclaw_data:/home/quantclaw/.quantclaw \
-  quantclaw:latest
+  -v ravbot_data:/home/ravbot/.ravbot \
+  ravbot:latest
 ```
 
 ## 故障排除
@@ -355,21 +355,21 @@ lsof -i :18800
 kill -9 <PID>
 
 # 或修改配置文件中的端口
-quantclaw config set gateway.port 18810
+ravbot config set gateway.port 18810
 ```
 
 **权限拒绝**
 
 ```bash
-# 确保 ~/.quantclaw 可写
-chmod 700 ~/.quantclaw
+# 确保 ~/.ravbot 可写
+chmod 700 ~/.ravbot
 ```
 
 **配置问题**
 
 ```bash
-quantclaw config validate
-quantclaw config schema
+ravbot config validate
+ravbot config schema
 ```
 
 ## 卸载
@@ -377,19 +377,19 @@ quantclaw config schema
 ### 二进制安装
 
 ```bash
-sudo rm /usr/local/bin/quantclaw
+sudo rm /usr/local/bin/ravbot
 
 # 可选：删除配置和数据
-rm -rf ~/.quantclaw
+rm -rf ~/.ravbot
 ```
 
 ### Docker
 
 ```bash
-docker stop quantclaw
-docker rm quantclaw
-docker rmi quantclaw:latest
-docker volume rm quantclaw_data
+docker stop ravbot
+docker rm ravbot
+docker rmi ravbot:latest
+docker volume rm ravbot_data
 ```
 
 ---

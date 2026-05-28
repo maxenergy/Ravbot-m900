@@ -1,7 +1,7 @@
 /**
- * QuantClaw Feishu (Lark) Adapter
+ * RavBot Feishu (Lark) Adapter
  *
- * Bridges Feishu/Lark messages to the QuantClaw agent via the gateway WebSocket RPC.
+ * Bridges Feishu/Lark messages to the RavBot agent via the gateway WebSocket RPC.
  * Uses Feishu SDK's long connection (WebSocket) mode for event subscription.
  */
 

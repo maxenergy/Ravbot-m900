@@ -1,11 +1,11 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/gateway/protocol.hpp"
+#include "ravbot/gateway/protocol.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace quantclaw::gateway;
+using namespace ravbot::gateway;
 
 // --- Frame type conversion ---
 

@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/mcp/mcp_server.hpp"
+#include "ravbot/mcp/mcp_server.hpp"
 
 #include <filesystem>
 #include <sstream>
@@ -9,7 +9,7 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
-namespace quantclaw::mcp {
+namespace ravbot::mcp {
 
 MCPTool::MCPTool(const std::string& name, const std::string& description)
     : name_(name), description_(description) {}
@@ -112,7 +112,7 @@ nlohmann::json MCPServer::handle_initialize(const nlohmann::json& /*request*/,
   result["capabilities"] = {{"tools", nlohmann::json::object()},
                             {"resources", nlohmann::json::object()},
                             {"prompts", nlohmann::json::object()}};
-  result["serverInfo"] = {{"name", "quantclaw"}, {"version", "0.3.0"}};
+  result["serverInfo"] = {{"name", "ravbot"}, {"version", "0.3.0"}};
   return create_success_response(id, result);
 }
 
@@ -260,4 +260,4 @@ nlohmann::json MCPServer::create_error_response(const nlohmann::json& id,
   return response;
 }
 
-}  // namespace quantclaw::mcp
+}  // namespace ravbot::mcp

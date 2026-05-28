@@ -1,6 +1,6 @@
 # Architecture Overview
 
-QuantClaw's architecture is designed for performance, reliability, and extensibility.
+RavBot's architecture is designed for performance, reliability, and extensibility.
 
 ## System Architecture
 
@@ -175,7 +175,7 @@ Located in `src/adapters/`:
 - Custom adapters (user-provided)
 
 ### IPC Communication
-- **TCP Protocol**: `127.0.0.1:QUANTCLAW_PORT`
+- **TCP Protocol**: `127.0.0.1:RAVBOT_PORT`
 - **JSON-RPC**: Request/response messaging
 - **Streaming**: Async event delivery
 - **Error Handling**: Graceful sidecar recovery
@@ -311,32 +311,32 @@ struct ToolResult {
 
 ### Single Agent (Foreground)
 ```bash
-quantclaw onboard --quick      # First-time setup
-quantclaw gateway              # Run gateway in foreground
-quantclaw agent "Hello!"       # Send a message
+ravbot onboard --quick      # First-time setup
+ravbot gateway              # Run gateway in foreground
+ravbot agent "Hello!"       # Send a message
 ```
 
 ### Gateway Background Service
 ```bash
-quantclaw gateway install      # Install the per-user background service
-quantclaw gateway start        # Start the background service
-quantclaw agent "Hello!"       # Connect via gateway
+ravbot gateway install      # Install the per-user background service
+ravbot gateway start        # Start the background service
+ravbot agent "Hello!"       # Connect via gateway
 ```
 
 ### Containerized (Docker)
 ```bash
 docker run -d \
-  --name quantclaw \
+  --name ravbot \
   -p 18800:18800 \
   -p 18801:18801 \
   -e OPENAI_API_KEY=sk-... \
-  -v quantclaw_data:/home/quantclaw/.quantclaw \
-  quantclaw:latest
+  -v ravbot_data:/home/ravbot/.ravbot \
+  ravbot:latest
 ```
 
 ### Production (Docker Compose)
 ```bash
-docker compose -f scripts/docker-compose.yml up -d quantclaw
+docker compose -f scripts/docker-compose.yml up -d ravbot
 ```
 
 ---

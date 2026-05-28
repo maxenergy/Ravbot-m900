@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 992 1067" width="992" height="1067">
-  <!-- QuantClaw Logo - Version 0307 -->
+  <!-- RavBot Logo - Version 0307 -->
   <defs>
     <style>
-      .quantclaw-text {
+      .ravbot-text {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 120px;
         font-weight: 700;
         fill: #1f2937;
       }
-      .quantclaw-url {
+      .ravbot-url {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 32px;
         fill: #6b7280;
@@ -43,11 +43,11 @@
   <circle cx="175" cy="320" r="8" class="gradient-cyan"/>
   <circle cx="175" cy="180" r="8" class="gradient-cyan"/>
 
-  <!-- Text: QuantClaw -->
-  <text x="496" y="380" class="quantclaw-text">QuantClaw</text>
+  <!-- Text: RavBot -->
+  <text x="496" y="380" class="ravbot-text">RavBot</text>
 
   <!-- URL -->
-  <text x="496" y="440" class="quantclaw-url">https://github.com/quantclaw</text>
+  <text x="496" y="440" class="ravbot-url">https://github.com/ravbot</text>
 
   <!-- Decorative quantum scatter (top right) -->
   <g opacity="0.4">

@@ -1,17 +1,30 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/providers/anthropic_provider.hpp"
+#include "ravbot/providers/anthropic_provider.hpp"
 
+#include <cerrno>
+#include <chrono>
+#include <csignal>
+#include <cstdio>
 #include <sstream>
+#include <thread>
+#include <vector>
+
+#ifndef _WIN32
+#include <poll.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/providers/provider_error.hpp"
+#include "ravbot/providers/provider_error.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb,
                             std::string* userp) {
@@ -111,6 +124,265 @@ static int thinking_budget_tokens(const std::string& level) {
     return 16000;
   return 0;  // "off" or unknown
 }
+
+static bool is_official_anthropic_base_url(const std::string& base_url) {
+  return base_url == "https://api.anthropic.com" ||
+         base_url == "https://api.anthropic.com/";
+}
+
+#ifndef _WIN32
+struct CurlCliResult {
+  std::string output;
+  int exit_code = -1;
+};
+
+static std::string write_temp_file(const std::string& prefix,
+                                   const std::string& contents) {
+  std::string path = "/tmp/ravbot-" + prefix + "-XXXXXX";
+  std::vector<char> path_buffer(path.begin(), path.end());
+  path_buffer.push_back('\0');
+
+  int fd = mkstemp(path_buffer.data());
+  if (fd < 0) {
+    throw ProviderError(ProviderErrorKind::kUnknown, 0,
+                        "Failed to create temporary curl request file",
+                        "anthropic");
+  }
+  chmod(path_buffer.data(), S_IRUSR | S_IWUSR);
+
+  FILE* file = fdopen(fd, "wb");
+  if (!file) {
+    close(fd);
+    std::remove(path_buffer.data());
+    throw ProviderError(ProviderErrorKind::kUnknown, 0,
+                        "Failed to open temporary curl request file",
+                        "anthropic");
+  }
+
+  if (!contents.empty() &&
+      fwrite(contents.data(), 1, contents.size(), file) != contents.size()) {
+    fclose(file);
+    std::remove(path_buffer.data());
+    throw ProviderError(ProviderErrorKind::kUnknown, 0,
+                        "Failed to write temporary curl request file",
+                        "anthropic");
+  }
+
+  fclose(file);
+  return std::string(path_buffer.data());
+}
+
+static std::string make_anthropic_curl_config(const std::string& url,
+                                              const std::string& api_key,
+                                              const std::string& payload_path,
+                                              int timeout) {
+  std::ostringstream config;
+  config << "url = " << nlohmann::json(url).dump() << "\n";
+  config << "request = \"POST\"\n";
+  config << "header = \"Content-Type: application/json\"\n";
+  config << "header = "
+         << nlohmann::json("x-api-key: " + api_key).dump() << "\n";
+  config << "header = \"anthropic-version: 2023-06-01\"\n";
+  config << "data-binary = "
+         << nlohmann::json("@" + payload_path).dump() << "\n";
+  if (timeout > 0) {
+    config << "max-time = " << timeout << "\n";
+  }
+  return config.str();
+}
+
+static CurlCliResult run_curl_config(const std::string& config_path,
+                                     int timeout_seconds) {
+  CurlCliResult result;
+
+  int pipefd[2];
+  if (pipe(pipefd) != 0) {
+    return result;
+  }
+
+  pid_t pid = fork();
+  if (pid < 0) {
+    close(pipefd[0]);
+    close(pipefd[1]);
+    return result;
+  }
+
+  if (pid == 0) {
+    close(pipefd[0]);
+    dup2(pipefd[1], STDOUT_FILENO);
+    dup2(pipefd[1], STDERR_FILENO);
+    close(pipefd[1]);
+
+    char curl_arg[] = "curl";
+    char silent_arg[] = "--silent";
+    char show_error_arg[] = "--show-error";
+    char write_out_arg[] = "--write-out";
+    char write_out_value[] = "\n%{http_code}";
+    char config_arg[] = "--config";
+    char* argv[] = {curl_arg,       silent_arg,      show_error_arg,
+                    write_out_arg,  write_out_value, config_arg,
+                    const_cast<char*>(config_path.c_str()), nullptr};
+    execvp("curl", argv);
+    _exit(127);
+  }
+
+  close(pipefd[1]);
+
+  auto deadline =
+      timeout_seconds > 0
+          ? std::chrono::steady_clock::now() +
+                std::chrono::seconds(timeout_seconds)
+          : std::chrono::steady_clock::time_point::max();
+
+  bool timed_out = false;
+  bool child_reaped = false;
+  int child_status = -1;
+  char buffer[1024];
+
+  for (;;) {
+    int remaining_ms = -1;
+    if (timeout_seconds > 0) {
+      auto now = std::chrono::steady_clock::now();
+      if (now >= deadline) {
+        timed_out = true;
+        break;
+      }
+      remaining_ms = static_cast<int>(
+          std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now)
+              .count());
+      if (remaining_ms <= 0) {
+        timed_out = true;
+        break;
+      }
+    }
+
+    pollfd pfd{pipefd[0], POLLIN, 0};
+    int pr = poll(&pfd, 1, remaining_ms);
+    if (pr < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      break;
+    }
+    if (pr == 0) {
+      timed_out = true;
+      break;
+    }
+
+    ssize_t n = read(pipefd[0], buffer, sizeof(buffer) - 1);
+    if (n < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      break;
+    }
+    if (n == 0) {
+      pid_t reaped = waitpid(pid, &child_status, WNOHANG);
+      if (reaped == pid) {
+        child_reaped = true;
+        break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      continue;
+    }
+    buffer[n] = '\0';
+    result.output += buffer;
+  }
+
+  close(pipefd[0]);
+
+  if (timed_out) {
+    kill(pid, SIGKILL);
+    waitpid(pid, nullptr, 0);
+    result.exit_code = -2;
+    return result;
+  }
+
+  if (!child_reaped) {
+    waitpid(pid, &child_status, 0);
+  }
+
+  result.exit_code = WIFEXITED(child_status) ? WEXITSTATUS(child_status)
+                                             : 128 + WTERMSIG(child_status);
+  return result;
+}
+
+static std::string make_api_request_with_curl_cli(
+    const std::string& base_url, const std::string& api_key, int timeout,
+    const std::string& json_payload,
+    const std::shared_ptr<spdlog::logger>& logger) {
+  std::string payload_path = write_temp_file("anthropic-payload", json_payload);
+  std::string config_path;
+
+  try {
+    config_path =
+        write_temp_file("anthropic-curl",
+                        make_anthropic_curl_config(base_url + "/v1/messages",
+                                                   api_key, payload_path,
+                                                   timeout));
+
+    auto result = run_curl_config(config_path, timeout > 0 ? timeout + 5 : 0);
+
+    std::remove(config_path.c_str());
+    std::remove(payload_path.c_str());
+
+    if (result.exit_code == -2) {
+      throw ProviderError(ProviderErrorKind::kTimeout, 0,
+                          "Anthropic-compatible curl request timed out",
+                          "anthropic");
+    }
+    if (result.exit_code != 0 && result.output.empty()) {
+      throw ProviderError(ProviderErrorKind::kUnknown, 0,
+                          "Anthropic-compatible curl request failed",
+                          "anthropic");
+    }
+
+    std::string output = result.output;
+    while (!output.empty() &&
+           (output.back() == '\n' || output.back() == '\r')) {
+      output.pop_back();
+    }
+
+    size_t split = output.find_last_of('\n');
+    if (split == std::string::npos || output.size() - split - 1 != 3) {
+      throw ProviderError(ProviderErrorKind::kUnknown, 0,
+                          "Anthropic-compatible curl response missing HTTP "
+                          "status: " +
+                              output.substr(0, 256),
+                          "anthropic");
+    }
+
+    std::string body = output.substr(0, split);
+    int http_code = 0;
+    try {
+      http_code = std::stoi(output.substr(split + 1));
+    } catch (...) {
+      throw ProviderError(ProviderErrorKind::kUnknown, 0,
+                          "Anthropic-compatible curl response has invalid HTTP "
+                          "status",
+                          "anthropic");
+    }
+
+    if (http_code >= 400) {
+      auto error_kind = ClassifyHttpError(http_code, body);
+      logger->error("Anthropic-compatible API HTTP {}: {}", http_code,
+                    body.substr(0, 256));
+      throw ProviderError(error_kind, http_code,
+                          "Anthropic API error (HTTP " +
+                              std::to_string(http_code) + "): " + body,
+                          "anthropic");
+    }
+
+    return body;
+  } catch (...) {
+    if (!config_path.empty()) {
+      std::remove(config_path.c_str());
+    }
+    std::remove(payload_path.c_str());
+    throw;
+  }
+}
+#endif
 
 // Apply thinking parameters to an Anthropic API payload.
 // When thinking is enabled, temperature must be 1 and max_tokens must
@@ -240,6 +512,13 @@ std::string AnthropicProvider::GetProviderName() const {
 
 std::string
 AnthropicProvider::MakeApiRequest(const std::string& json_payload) const {
+#ifndef _WIN32
+  if (!is_official_anthropic_base_url(base_url_)) {
+    return make_api_request_with_curl_cli(base_url_, api_key_, timeout_,
+                                          json_payload, logger_);
+  }
+#endif
+
   std::string read_buffer;
   RetryAfterCapture retry_capture;
 
@@ -434,6 +713,27 @@ static size_t AnthropicStreamWriteCallback(void* contents, size_t size,
 void AnthropicProvider::ChatCompletionStream(
     const ChatCompletionRequest& request,
     std::function<void(const ChatCompletionResponse&)> callback) {
+  if (!is_official_anthropic_base_url(base_url_)) {
+    logger_->debug(
+        "Using non-streaming Anthropic-compatible request for base_url: {}",
+        base_url_);
+
+    ChatCompletionRequest non_stream_request = request;
+    non_stream_request.stream = false;
+    ChatCompletionResponse response = ChatCompletion(non_stream_request);
+
+    if (!response.content.empty() || !response.reasoning_content.empty() ||
+        !response.tool_calls.empty()) {
+      callback(response);
+    }
+
+    ChatCompletionResponse end_resp;
+    end_resp.is_stream_end = true;
+    end_resp.usage = response.usage;
+    callback(end_resp);
+    return;
+  }
+
   auto [system_prompt, messages_json] =
       serialize_messages_to_anthropic(request.messages);
 
@@ -523,4 +823,4 @@ std::vector<std::string> AnthropicProvider::GetSupportedModels() const {
   return {"claude-sonnet-4-6", "claude-opus-4-6", "claude-haiku-4-5"};
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

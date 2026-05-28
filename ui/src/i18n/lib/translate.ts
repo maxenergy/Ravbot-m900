@@ -5,6 +5,12 @@ type Subscriber = (locale: Locale) => void;
 
 export const SUPPORTED_LOCALES: ReadonlyArray<Locale> = ["en", "zh-CN", "zh-TW", "pt-BR"];
 
+const LOCALE_LOADERS: Partial<Record<Locale, () => Promise<TranslationMap>>> = {
+  "zh-CN": async () => (await import("../locales/zh-CN.ts")).zh_CN,
+  "zh-TW": async () => (await import("../locales/zh-TW.ts")).zh_TW,
+  "pt-BR": async () => (await import("../locales/pt-BR.ts")).pt_BR,
+};
+
 export function isSupportedLocale(value: string | null | undefined): value is Locale {
   return value !== null && value !== undefined && SUPPORTED_LOCALES.includes(value as Locale);
 }
@@ -13,17 +19,23 @@ class I18nManager {
   private locale: Locale = "en";
   private translations: Record<Locale, TranslationMap> = { en } as Record<Locale, TranslationMap>;
   private subscribers: Set<Subscriber> = new Set();
+  public ready: Promise<void>;
 
   constructor() {
     this.loadLocale();
+    this.ready = this.ensureLocaleLoaded(this.locale).then((loaded) => {
+      if (loaded) {
+        this.notify();
+      }
+    });
   }
 
   private loadLocale() {
-    const saved = localStorage.getItem("quantclaw.i18n.locale");
+    const saved = globalThis.localStorage?.getItem("ravbot.i18n.locale");
     if (isSupportedLocale(saved)) {
       this.locale = saved;
     } else {
-      const navLang = navigator.language;
+      const navLang = globalThis.navigator?.language ?? "en";
       if (navLang.startsWith("zh")) {
         this.locale = navLang === "zh-TW" || navLang === "zh-HK" ? "zh-TW" : "zh-CN";
       } else if (navLang.startsWith("pt")) {
@@ -39,32 +51,18 @@ class I18nManager {
   }
 
   public async setLocale(locale: Locale) {
-    if (this.locale === locale) {
+    const changed = this.locale !== locale;
+    if (!changed && this.translations[locale]) {
       return;
     }
 
-    // Lazy load translations if needed
-    if (!this.translations[locale]) {
-      try {
-        let module: Record<string, TranslationMap>;
-        if (locale === "zh-CN") {
-          module = await import("../locales/zh-CN.ts");
-        } else if (locale === "zh-TW") {
-          module = await import("../locales/zh-TW.ts");
-        } else if (locale === "pt-BR") {
-          module = await import("../locales/pt-BR.ts");
-        } else {
-          return;
-        }
-        this.translations[locale] = module[locale.replace("-", "_")];
-      } catch (e) {
-        console.error(`Failed to load locale: ${locale}`, e);
-        return;
-      }
+    const loaded = await this.ensureLocaleLoaded(locale);
+    if (!loaded) {
+      return;
     }
 
     this.locale = locale;
-    localStorage.setItem("quantclaw.i18n.locale", locale);
+    globalThis.localStorage?.setItem("ravbot.i18n.locale", locale);
     this.notify();
   }
 
@@ -79,6 +77,25 @@ class I18nManager {
 
   private notify() {
     this.subscribers.forEach((sub) => sub(this.locale));
+  }
+
+  private async ensureLocaleLoaded(locale: Locale): Promise<boolean> {
+    if (this.translations[locale]) {
+      return true;
+    }
+
+    const load = LOCALE_LOADERS[locale];
+    if (!load) {
+      return false;
+    }
+
+    try {
+      this.translations[locale] = await load();
+      return true;
+    } catch (e) {
+      console.error(`Failed to load locale: ${locale}`, e);
+      return false;
+    }
   }
 
   public t(key: string, params?: Record<string, string>): string {

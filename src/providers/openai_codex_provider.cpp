@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/providers/openai_codex_provider.hpp"
+#include "ravbot/providers/openai_codex_provider.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -13,9 +13,9 @@
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 
-#include "quantclaw/providers/provider_error.hpp"
+#include "ravbot/providers/provider_error.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 namespace {
 
 constexpr size_t kMaxErrorBodyBytes = 128 * 1024;
@@ -401,4 +401,4 @@ OpenAICodexProvider::CreateHeaders(const std::string& bearer_token) const {
   return headers;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <algorithm>
@@ -11,32 +11,32 @@
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/core/agent_loop.hpp"
-#include "quantclaw/core/memory_manager.hpp"
-#include "quantclaw/core/skill_loader.hpp"
-#include "quantclaw/core/usage_accumulator.hpp"
-#include "quantclaw/gateway/protocol.hpp"
-#include "quantclaw/providers/llm_provider.hpp"
-#include "quantclaw/providers/provider_registry.hpp"
-#include "quantclaw/tools/tool_registry.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/core/agent_loop.hpp"
+#include "ravbot/core/memory_manager.hpp"
+#include "ravbot/core/skill_loader.hpp"
+#include "ravbot/core/usage_accumulator.hpp"
+#include "ravbot/gateway/protocol.hpp"
+#include "ravbot/providers/llm_provider.hpp"
+#include "ravbot/providers/provider_registry.hpp"
+#include "ravbot/tools/tool_registry.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
 
 // Mock LLM provider that returns canned responses and captures requests
-class MockLLMProvider : public quantclaw::LLMProvider {
+class MockLLMProvider : public ravbot::LLMProvider {
  public:
-  std::string response_text = "I am QuantClaw.";
+  std::string response_text = "I am RavBot.";
   std::string response_finish_reason = "stop";
-  std::vector<quantclaw::ToolCall> response_tool_calls;
-  std::vector<quantclaw::ChatCompletionResponse> stream_chunks;
-  mutable quantclaw::ChatCompletionRequest last_request;
+  std::vector<ravbot::ToolCall> response_tool_calls;
+  std::vector<ravbot::ChatCompletionResponse> stream_chunks;
+  mutable ravbot::ChatCompletionRequest last_request;
 
-  quantclaw::ChatCompletionResponse
-  ChatCompletion(const quantclaw::ChatCompletionRequest& request) override {
+  ravbot::ChatCompletionResponse
+  ChatCompletion(const ravbot::ChatCompletionRequest& request) override {
     last_request = request;
-    quantclaw::ChatCompletionResponse resp;
+    ravbot::ChatCompletionResponse resp;
     resp.content = response_text;
     resp.finish_reason = response_finish_reason;
     resp.tool_calls = response_tool_calls;
@@ -45,8 +45,8 @@ class MockLLMProvider : public quantclaw::LLMProvider {
   }
 
   void ChatCompletionStream(
-      const quantclaw::ChatCompletionRequest& request,
-      std::function<void(const quantclaw::ChatCompletionResponse&)> callback)
+      const ravbot::ChatCompletionRequest& request,
+      std::function<void(const ravbot::ChatCompletionResponse&)> callback)
       override {
     last_request = request;
     if (!stream_chunks.empty()) {
@@ -55,7 +55,7 @@ class MockLLMProvider : public quantclaw::LLMProvider {
       }
       return;
     }
-    quantclaw::ChatCompletionResponse resp;
+    ravbot::ChatCompletionResponse resp;
     resp.content = response_text;
     resp.is_stream_end = true;
     resp.usage = mock_usage;
@@ -71,13 +71,13 @@ class MockLLMProvider : public quantclaw::LLMProvider {
 
   // Configurable token counts for usage-tracking tests (default 0 keeps
   // existing tests unaffected)
-  quantclaw::TokenUsage mock_usage;
+  ravbot::TokenUsage mock_usage;
 };
 
 class AgentLoopTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_agent_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_agent_test");
 
     auto log_sink =
         std::make_shared<spdlog::sinks::ostream_sink_mt>(log_stream_);
@@ -87,20 +87,20 @@ class AgentLoopTest : public ::testing::Test {
     logger_->set_pattern("%l:%v");
 
     memory_manager_ =
-        std::make_shared<quantclaw::MemoryManager>(test_dir_, logger_);
-    skill_loader_ = std::make_shared<quantclaw::SkillLoader>(logger_);
-    tool_registry_ = std::make_shared<quantclaw::ToolRegistry>(logger_);
+        std::make_shared<ravbot::MemoryManager>(test_dir_, logger_);
+    skill_loader_ = std::make_shared<ravbot::SkillLoader>(logger_);
+    tool_registry_ = std::make_shared<ravbot::ToolRegistry>(logger_);
     tool_registry_->RegisterBuiltinTools();
 
     mock_provider_ = std::make_shared<MockLLMProvider>();
 
-    quantclaw::AgentConfig agent_config;
+    ravbot::AgentConfig agent_config;
     agent_config.model = "test-model";
     agent_config.temperature = 0.5;
     agent_config.max_tokens = 2048;
     agent_config.max_iterations = 15;
 
-    agent_loop_ = std::make_unique<quantclaw::AgentLoop>(
+    agent_loop_ = std::make_unique<ravbot::AgentLoop>(
         memory_manager_, skill_loader_, tool_registry_, mock_provider_,
         agent_config, logger_);
   }
@@ -114,28 +114,28 @@ class AgentLoopTest : public ::testing::Test {
   std::filesystem::path test_dir_;
   std::ostringstream log_stream_;
   std::shared_ptr<spdlog::logger> logger_;
-  std::shared_ptr<quantclaw::MemoryManager> memory_manager_;
-  std::shared_ptr<quantclaw::SkillLoader> skill_loader_;
-  std::shared_ptr<quantclaw::ToolRegistry> tool_registry_;
+  std::shared_ptr<ravbot::MemoryManager> memory_manager_;
+  std::shared_ptr<ravbot::SkillLoader> skill_loader_;
+  std::shared_ptr<ravbot::ToolRegistry> tool_registry_;
   std::shared_ptr<MockLLMProvider> mock_provider_;
-  std::unique_ptr<quantclaw::AgentLoop> agent_loop_;
+  std::unique_ptr<ravbot::AgentLoop> agent_loop_;
 };
 
 TEST_F(AgentLoopTest, ProcessMessageReturnsResponse) {
-  mock_provider_->response_text = "Hello! I am QuantClaw.";
+  mock_provider_->response_text = "Hello! I am RavBot.";
 
   auto new_msgs =
       agent_loop_->ProcessMessage("Hello", {}, "You are a helpful assistant.");
 
   ASSERT_FALSE(new_msgs.empty());
-  EXPECT_EQ(new_msgs.back().content[0].text, "Hello! I am QuantClaw.");
+  EXPECT_EQ(new_msgs.back().content[0].text, "Hello! I am RavBot.");
 }
 
 TEST_F(AgentLoopTest, ProcessMessageWithHistory) {
-  quantclaw::Message prev_user{"user", "What is your name?"};
-  quantclaw::Message prev_assistant{"assistant", "I am QuantClaw."};
+  ravbot::Message prev_user{"user", "What is your name?"};
+  ravbot::Message prev_assistant{"assistant", "I am RavBot."};
 
-  std::vector<quantclaw::Message> history = {prev_user, prev_assistant};
+  std::vector<ravbot::Message> history = {prev_user, prev_assistant};
 
   mock_provider_->response_text = "You asked about my name.";
 
@@ -158,9 +158,9 @@ TEST_F(AgentLoopTest, ProcessMessageWithEmptySystemPrompt) {
 TEST_F(AgentLoopTest, StreamingCallback) {
   mock_provider_->response_text = "Streamed response.";
 
-  std::vector<quantclaw::AgentEvent> events;
+  std::vector<ravbot::AgentEvent> events;
   agent_loop_->ProcessMessageStream(
-      "Hello", {}, "System.", [&events](const quantclaw::AgentEvent& event) {
+      "Hello", {}, "System.", [&events](const ravbot::AgentEvent& event) {
         events.push_back(event);
       });
 
@@ -210,7 +210,7 @@ TEST_F(AgentLoopTest, UsesConfigMaxTokens) {
 }
 
 TEST_F(AgentLoopTest, SetConfigUpdatesModel) {
-  quantclaw::AgentConfig new_config;
+  ravbot::AgentConfig new_config;
   new_config.model = "new-model";
   new_config.temperature = 0.9;
   new_config.max_tokens = 8192;
@@ -234,33 +234,33 @@ TEST_F(AgentLoopTest,
   auto codex_provider = std::make_shared<MockLLMProvider>();
   codex_provider->response_text = "codex";
 
-  auto registry = std::make_unique<quantclaw::ProviderRegistry>(logger_);
+  auto registry = std::make_unique<ravbot::ProviderRegistry>(logger_);
   registry->RegisterFactory("openai", [openai_provider](
-                                          const quantclaw::ProviderEntry&,
+                                          const ravbot::ProviderEntry&,
                                           std::shared_ptr<spdlog::logger>) {
-    return std::static_pointer_cast<quantclaw::LLMProvider>(openai_provider);
+    return std::static_pointer_cast<ravbot::LLMProvider>(openai_provider);
   });
   registry->RegisterFactory(
-      "openai-codex", [codex_provider](const quantclaw::ProviderEntry&,
+      "openai-codex", [codex_provider](const ravbot::ProviderEntry&,
                                        std::shared_ptr<spdlog::logger>) {
-        return std::static_pointer_cast<quantclaw::LLMProvider>(codex_provider);
+        return std::static_pointer_cast<ravbot::LLMProvider>(codex_provider);
       });
 
-  quantclaw::ProviderEntry openai_entry;
+  ravbot::ProviderEntry openai_entry;
   openai_entry.id = "openai";
   registry->AddProvider(openai_entry);
 
-  quantclaw::ProviderEntry codex_entry;
+  ravbot::ProviderEntry codex_entry;
   codex_entry.id = "openai-codex";
   registry->AddProvider(codex_entry);
 
-  quantclaw::AgentConfig agent_config;
+  ravbot::AgentConfig agent_config;
   agent_config.model = "openai-codex/gpt-5";
   agent_config.temperature = 0.5;
   agent_config.max_tokens = 2048;
   agent_config.max_iterations = 15;
 
-  auto loop = std::make_unique<quantclaw::AgentLoop>(
+  auto loop = std::make_unique<ravbot::AgentLoop>(
       memory_manager_, skill_loader_, tool_registry_, openai_provider,
       agent_config, logger_);
   loop->SetProviderRegistry(registry.get());
@@ -281,33 +281,33 @@ TEST_F(AgentLoopTest,
   auto codex_provider = std::make_shared<MockLLMProvider>();
   codex_provider->response_text = "codex";
 
-  auto registry = std::make_unique<quantclaw::ProviderRegistry>(logger_);
+  auto registry = std::make_unique<ravbot::ProviderRegistry>(logger_);
   registry->RegisterFactory("openai", [openai_provider](
-                                          const quantclaw::ProviderEntry&,
+                                          const ravbot::ProviderEntry&,
                                           std::shared_ptr<spdlog::logger>) {
-    return std::static_pointer_cast<quantclaw::LLMProvider>(openai_provider);
+    return std::static_pointer_cast<ravbot::LLMProvider>(openai_provider);
   });
   registry->RegisterFactory(
-      "openai-codex", [codex_provider](const quantclaw::ProviderEntry&,
+      "openai-codex", [codex_provider](const ravbot::ProviderEntry&,
                                        std::shared_ptr<spdlog::logger>) {
-        return std::static_pointer_cast<quantclaw::LLMProvider>(codex_provider);
+        return std::static_pointer_cast<ravbot::LLMProvider>(codex_provider);
       });
 
-  quantclaw::ProviderEntry openai_entry;
+  ravbot::ProviderEntry openai_entry;
   openai_entry.id = "openai";
   registry->AddProvider(openai_entry);
 
-  quantclaw::ProviderEntry codex_entry;
+  ravbot::ProviderEntry codex_entry;
   codex_entry.id = "openai-codex";
   registry->AddProvider(codex_entry);
 
-  quantclaw::AgentConfig agent_config;
+  ravbot::AgentConfig agent_config;
   agent_config.model = "openai-codex/gpt-5";
   agent_config.temperature = 0.5;
   agent_config.max_tokens = 2048;
   agent_config.max_iterations = 15;
 
-  auto loop = std::make_unique<quantclaw::AgentLoop>(
+  auto loop = std::make_unique<ravbot::AgentLoop>(
       memory_manager_, skill_loader_, tool_registry_, openai_provider,
       agent_config, logger_);
   loop->SetProviderRegistry(registry.get());
@@ -326,9 +326,9 @@ TEST_F(AgentLoopTest,
 
 TEST_F(AgentLoopTest, StreamingUsesConfigModel) {
   mock_provider_->response_text = "streamed";
-  std::vector<quantclaw::AgentEvent> events;
+  std::vector<ravbot::AgentEvent> events;
   agent_loop_->ProcessMessageStream(
-      "test", {}, "sys", [&events](const quantclaw::AgentEvent& event) {
+      "test", {}, "sys", [&events](const ravbot::AgentEvent& event) {
         events.push_back(event);
       });
 
@@ -340,7 +340,7 @@ TEST_F(AgentLoopTest, StreamingRequestIncludesBuiltinToolSchemas) {
   mock_provider_->response_text = "streamed";
 
   agent_loop_->ProcessMessageStream("test", {}, "sys",
-                                    [](const quantclaw::AgentEvent&) {});
+                                    [](const ravbot::AgentEvent&) {});
 
   ASSERT_FALSE(mock_provider_->last_request.tools.empty());
   EXPECT_TRUE(mock_provider_->last_request.tool_choice_auto);
@@ -367,9 +367,9 @@ TEST_F(AgentLoopTest, GetConfigReturnsCurrentConfig) {
 TEST_F(AgentLoopTest, StreamReturnsNewMessages) {
   mock_provider_->response_text = "Final answer.";
 
-  std::vector<quantclaw::AgentEvent> events;
+  std::vector<ravbot::AgentEvent> events;
   auto new_msgs = agent_loop_->ProcessMessageStream(
-      "Hello", {}, "System.", [&events](const quantclaw::AgentEvent& event) {
+      "Hello", {}, "System.", [&events](const ravbot::AgentEvent& event) {
         events.push_back(event);
       });
 
@@ -382,17 +382,17 @@ TEST_F(AgentLoopTest, StreamReturnsNewMessages) {
 }
 
 TEST_F(AgentLoopTest, StreamInvalidToolCallReturnsReadableFallback) {
-  quantclaw::ChatCompletionResponse tool_chunk;
+  ravbot::ChatCompletionResponse tool_chunk;
   tool_chunk.tool_calls.push_back({"call_invalid", "", {{"command", "ver"}}});
 
-  quantclaw::ChatCompletionResponse end_chunk;
+  ravbot::ChatCompletionResponse end_chunk;
   end_chunk.is_stream_end = true;
 
   mock_provider_->stream_chunks = {tool_chunk, end_chunk};
 
-  std::vector<quantclaw::AgentEvent> events;
+  std::vector<ravbot::AgentEvent> events;
   auto new_msgs = agent_loop_->ProcessMessageStream(
-      "Hello", {}, "System.", [&events](const quantclaw::AgentEvent& event) {
+      "Hello", {}, "System.", [&events](const ravbot::AgentEvent& event) {
         events.push_back(event);
       });
 
@@ -403,21 +403,21 @@ TEST_F(AgentLoopTest, StreamInvalidToolCallReturnsReadableFallback) {
             "I couldn't continue because the model emitted an invalid tool "
             "call. Please try again.");
   ASSERT_FALSE(events.empty());
-  EXPECT_EQ(events.back().type, quantclaw::gateway::events::kMessageEnd);
+  EXPECT_EQ(events.back().type, ravbot::gateway::events::kMessageEnd);
   EXPECT_EQ(events.back().data.value("content", ""),
             "I couldn't continue because the model emitted an invalid tool "
             "call. Please try again.");
 }
 
 TEST_F(AgentLoopTest, StreamEmptyResponseReturnsReadableFallbackAndLogsWhy) {
-  quantclaw::ChatCompletionResponse end_chunk;
+  ravbot::ChatCompletionResponse end_chunk;
   end_chunk.is_stream_end = true;
 
   mock_provider_->stream_chunks = {end_chunk};
 
-  std::vector<quantclaw::AgentEvent> events;
+  std::vector<ravbot::AgentEvent> events;
   auto new_msgs = agent_loop_->ProcessMessageStream(
-      "Hello", {}, "System.", [&events](const quantclaw::AgentEvent& event) {
+      "Hello", {}, "System.", [&events](const ravbot::AgentEvent& event) {
         events.push_back(event);
       });
 
@@ -428,7 +428,7 @@ TEST_F(AgentLoopTest, StreamEmptyResponseReturnsReadableFallbackAndLogsWhy) {
             "I couldn't complete that request because the model returned no "
             "usable response. Please try again.");
   ASSERT_FALSE(events.empty());
-  EXPECT_EQ(events.back().type, quantclaw::gateway::events::kMessageEnd);
+  EXPECT_EQ(events.back().type, ravbot::gateway::events::kMessageEnd);
   EXPECT_EQ(events.back().data.value("content", ""),
             "I couldn't complete that request because the model returned no "
             "usable response. Please try again.");
@@ -468,7 +468,7 @@ class AgentLoopUsageKeyTest : public AgentLoopTest {
  protected:
   void SetUp() override {
     AgentLoopTest::SetUp();
-    accumulator_ = std::make_shared<quantclaw::UsageAccumulator>();
+    accumulator_ = std::make_shared<ravbot::UsageAccumulator>();
     agent_loop_->SetUsageAccumulator(accumulator_);
     agent_loop_->SetSessionKey("internal-session");
     // Provide non-zero tokens so turns > 0 regardless of actual content
@@ -476,7 +476,7 @@ class AgentLoopUsageKeyTest : public AgentLoopTest {
     mock_provider_->response_text = "ok";
   }
 
-  std::shared_ptr<quantclaw::UsageAccumulator> accumulator_;
+  std::shared_ptr<ravbot::UsageAccumulator> accumulator_;
 };
 
 // When usage_session_key is non-empty, usage is recorded under that key (not
@@ -508,7 +508,7 @@ TEST_F(AgentLoopUsageKeyTest, NeitherKeySetNoUsageRecorded) {
 // Stream: non-empty usage_session_key routes usage to that key
 TEST_F(AgentLoopUsageKeyTest, StreamUsageRecordedUnderCustomKey) {
   agent_loop_->ProcessMessageStream(
-      "hi", {}, "sys", [](const quantclaw::AgentEvent&) {}, "custom-key");
+      "hi", {}, "sys", [](const ravbot::AgentEvent&) {}, "custom-key");
 
   EXPECT_EQ(accumulator_->GetSession("custom-key").turns, 1);
   EXPECT_EQ(accumulator_->GetSession("internal-session").turns, 0);
@@ -517,7 +517,7 @@ TEST_F(AgentLoopUsageKeyTest, StreamUsageRecordedUnderCustomKey) {
 // Stream: empty usage_session_key falls back to session_key_
 TEST_F(AgentLoopUsageKeyTest, StreamUsageFallsBackToSessionKey) {
   agent_loop_->ProcessMessageStream("hi", {}, "sys",
-                                    [](const quantclaw::AgentEvent&) {});
+                                    [](const ravbot::AgentEvent&) {});
 
   EXPECT_EQ(accumulator_->GetSession("internal-session").turns, 1);
   EXPECT_EQ(accumulator_->GetSession("custom-key").turns, 0);

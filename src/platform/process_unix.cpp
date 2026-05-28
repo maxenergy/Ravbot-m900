@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef _WIN32
@@ -22,12 +22,12 @@
 #include <mach-o/dyld.h>
 #endif
 
-#include "quantclaw/common/defer.hpp"
-#include "quantclaw/platform/process.hpp"
+#include "ravbot/common/defer.hpp"
+#include "ravbot/platform/process.hpp"
 
 #include <poll.h>
 
-namespace quantclaw::platform {
+namespace ravbot::platform {
 
 ProcessId spawn_process(const std::vector<std::string>& args,
                         const std::vector<std::string>& env,
@@ -318,7 +318,7 @@ std::string executable_path() {
     buf[len] = '\0';
     return std::string(buf);
   }
-  return "quantclaw";
+  return "ravbot";
 #endif
 }
 
@@ -327,6 +327,6 @@ std::string home_directory() {
   return home ? home : "/tmp";
 }
 
-}  // namespace quantclaw::platform
+}  // namespace ravbot::platform
 
 #endif  // !_WIN32

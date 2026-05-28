@@ -1,4 +1,5 @@
 import { html, nothing } from "lit";
+import { t } from "../../i18n/index.ts";
 import { icons } from "../icons.ts";
 import { formatToolDetail, resolveToolDisplay } from "../tool-display.ts";
 import type { ToolCard } from "../types/chat-types.ts";
@@ -62,7 +63,7 @@ export function renderToolCardSidebar(card: ToolCard, onOpenSidebar?: (content: 
         }
         const info = `## ${display.label}\n\n${
           detail ? `**Command:** \`${detail}\`\n\n` : ""
-        }*No output — tool completed successfully.*`;
+        }*${t("toolOutput.noOutputSuccess")}*`;
         onOpenSidebar!(info);
       }
     : undefined;
@@ -97,7 +98,7 @@ export function renderToolCardSidebar(card: ToolCard, onOpenSidebar?: (content: 
         </div>
         ${
           canClick
-            ? html`<span class="chat-tool-card__action">${hasText ? "View" : ""} ${icons.check}</span>`
+            ? html`<span class="chat-tool-card__action">${hasText ? t("toolOutput.view") : ""} ${icons.check}</span>`
             : nothing
         }
         ${isEmpty && !canClick ? html`<span class="chat-tool-card__status">${icons.check}</span>` : nothing}
@@ -106,7 +107,7 @@ export function renderToolCardSidebar(card: ToolCard, onOpenSidebar?: (content: 
       ${
         isEmpty
           ? html`
-              <div class="chat-tool-card__status-text muted">Completed</div>
+              <div class="chat-tool-card__status-text muted">${t("toolOutput.completed")}</div>
             `
           : nothing
       }

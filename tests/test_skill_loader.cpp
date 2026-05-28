@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <cstdlib>
@@ -17,8 +17,8 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/core/skill_loader.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/core/skill_loader.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
@@ -26,12 +26,12 @@
 class SkillLoaderTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_skills_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_skills_test");
 
     auto null_sink = std::make_shared<spdlog::sinks::null_sink_mt>();
     logger_ = std::make_shared<spdlog::logger>("test", null_sink);
 
-    skill_loader_ = std::make_unique<quantclaw::SkillLoader>(logger_);
+    skill_loader_ = std::make_unique<ravbot::SkillLoader>(logger_);
   }
 
   void TearDown() override {
@@ -50,7 +50,7 @@ class SkillLoaderTest : public ::testing::Test {
 
   std::filesystem::path test_dir_;
   std::shared_ptr<spdlog::logger> logger_;
-  std::unique_ptr<quantclaw::SkillLoader> skill_loader_;
+  std::unique_ptr<ravbot::SkillLoader> skill_loader_;
 };
 
 TEST_F(SkillLoaderTest, LoadSimpleSkill) {
@@ -61,7 +61,7 @@ description: A simple test skill
 
 # Test Skill
 
-This is a test skill for QuantClaw.
+This is a test skill for RavBot.
 )");
 
   auto skills = skill_loader_->LoadSkillsFromDirectory(test_dir_);
@@ -286,8 +286,8 @@ macOS content.
 
 TEST_F(SkillLoaderTest, LoadSkillsMultiDir) {
   // Create two separate directories with different skills
-  auto dir_a = quantclaw::test::MakeTestDir("quantclaw_multi_a");
-  auto dir_b = quantclaw::test::MakeTestDir("quantclaw_multi_b");
+  auto dir_a = ravbot::test::MakeTestDir("ravbot_multi_a");
+  auto dir_b = ravbot::test::MakeTestDir("ravbot_multi_b");
   std::filesystem::create_directories(dir_a / "skill-a");
   std::filesystem::create_directories(dir_b / "skill-b");
 
@@ -302,7 +302,7 @@ TEST_F(SkillLoaderTest, LoadSkillsMultiDir) {
 
   // Use workspace_path = dir_a's parent (skills/ subdir = dir_a)
   // and extraDirs = [dir_b]
-  auto workspace = quantclaw::test::MakeTestDir("quantclaw_multi_ws");
+  auto workspace = ravbot::test::MakeTestDir("ravbot_multi_ws");
   // Symlink or copy dir_a as workspace/skills
   auto ws_skills = workspace / "skills";
   if (std::filesystem::exists(ws_skills))
@@ -313,7 +313,7 @@ TEST_F(SkillLoaderTest, LoadSkillsMultiDir) {
     f << "---\nname: skill-a\ndescription: A\n---\nA content.";
   }
 
-  quantclaw::SkillsConfig config;
+  ravbot::SkillsConfig config;
   config.load.extra_dirs.push_back(dir_b.string());
 
   auto skills = skill_loader_->LoadSkills(config, workspace);
@@ -338,8 +338,8 @@ TEST_F(SkillLoaderTest, LoadSkillsMultiDir) {
 }
 
 TEST_F(SkillLoaderTest, DeduplicationWorkspaceWins) {
-  auto workspace = quantclaw::test::MakeTestDir("quantclaw_dedup_ws");
-  auto extra_dir = quantclaw::test::MakeTestDir("quantclaw_dedup_extra");
+  auto workspace = ravbot::test::MakeTestDir("ravbot_dedup_ws");
+  auto extra_dir = ravbot::test::MakeTestDir("ravbot_dedup_extra");
   std::filesystem::create_directories(workspace / "skills" / "dupe-skill");
   std::filesystem::create_directories(extra_dir / "dupe-skill");
 
@@ -353,7 +353,7 @@ TEST_F(SkillLoaderTest, DeduplicationWorkspaceWins) {
     f << "---\nname: dupe-skill\ndescription: extra version\n---\nExtra.";
   }
 
-  quantclaw::SkillsConfig config;
+  ravbot::SkillsConfig config;
   config.load.extra_dirs.push_back(extra_dir.string());
 
   auto skills = skill_loader_->LoadSkills(config, workspace);
@@ -380,7 +380,7 @@ TEST_F(SkillLoaderTest, PerSkillDisableViaConfig) {
 
   // Use load_skills with a config that disables one skill
   // We need to set up workspace pointing to test_dir_ as skills subdir
-  auto workspace = quantclaw::test::MakeTestDir("quantclaw_disable_ws");
+  auto workspace = ravbot::test::MakeTestDir("ravbot_disable_ws");
   auto ws_skills = workspace / "skills";
   if (std::filesystem::exists(workspace))
     std::filesystem::remove_all(workspace);
@@ -395,8 +395,8 @@ TEST_F(SkillLoaderTest, PerSkillDisableViaConfig) {
     }
   }
 
-  quantclaw::SkillsConfig config;
-  config.entries["disabled-skill"] = quantclaw::SkillEntryConfig{false};
+  ravbot::SkillsConfig config;
+  config.entries["disabled-skill"] = ravbot::SkillEntryConfig{false};
 
   auto skills = skill_loader_->LoadSkills(config, workspace);
 
@@ -418,7 +418,7 @@ TEST_F(SkillLoaderTest, PerSkillDisableViaConfig) {
 TEST_F(SkillLoaderTest, OpenClawInstallArrayFormat) {
   // OpenClaw uses JSON-style install arrays. Our simple YAML parser does not
   // handle arrays of objects, but the code paths for parsing install arrays
-  // are tested here via the JSON install section (QuantClaw object format).
+  // are tested here via the JSON install section (RavBot object format).
   // The metadata.openclaw fields (emoji, homepage, etc.) are tested below.
   write_skill("weather", R"YAML(---
 name: weather
@@ -467,7 +467,7 @@ install:
   EXPECT_TRUE(found_node);
 }
 
-TEST_F(SkillLoaderTest, QuantClawObjectInstallFormat) {
+TEST_F(SkillLoaderTest, RavBotObjectInstallFormat) {
   write_skill("tools", R"(---
 name: tools
 install:
@@ -553,7 +553,7 @@ metadata:
 }
 
 TEST_F(SkillLoaderTest, InstallInfoEffectiveMethods) {
-  quantclaw::SkillInstallInfo info;
+  ravbot::SkillInstallInfo info;
 
   // Empty defaults
   EXPECT_EQ(info.EffectiveMethod(), "");
@@ -601,7 +601,7 @@ skillKey: "my-key"
 
 TEST_F(SkillLoaderTest, LoadSkillsUsesPlatformHomeForUserSkillDirectory) {
   auto test_home =
-      quantclaw::test::MakeTestDir("quantclaw_user_skills_home_test");
+      ravbot::test::MakeTestDir("ravbot_user_skills_home_test");
   auto get_or_empty = [](const char* name) -> std::string {
     const char* value = std::getenv(name);
     return value ? value : "";
@@ -636,15 +636,15 @@ TEST_F(SkillLoaderTest, LoadSkillsUsesPlatformHomeForUserSkillDirectory) {
   };
 
   try {
-    auto skill_dir = test_home / ".quantclaw" / "skills" / "global-skill";
+    auto skill_dir = test_home / ".ravbot" / "skills" / "global-skill";
     std::filesystem::create_directories(skill_dir);
     {
       std::ofstream f(skill_dir / "SKILL.md");
       f << "---\nname: global-skill\ndescription: From user dir\n---\nGlobal.";
     }
 
-    quantclaw::SkillsConfig config;
-    auto workspace = quantclaw::test::MakeTestDir("quantclaw_empty_workspace");
+    ravbot::SkillsConfig config;
+    auto workspace = ravbot::test::MakeTestDir("ravbot_empty_workspace");
     auto skills = skill_loader_->LoadSkills(config, workspace);
 
     bool found = false;

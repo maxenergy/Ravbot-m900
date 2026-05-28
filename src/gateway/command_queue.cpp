@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/gateway/command_queue.hpp"
+#include "ravbot/gateway/command_queue.hpp"
 
 #include <algorithm>
 #include <iomanip>
 #include <random>
 #include <sstream>
 
-namespace quantclaw::gateway {
+namespace ravbot::gateway {
 
 // ================================================================
 // Enum conversions
@@ -642,4 +642,4 @@ void CommandQueue::emit_queue_event(const QueuedCommand& cmd,
   event_sender_(cmd.connection_id, event_type, payload);
 }
 
-}  // namespace quantclaw::gateway
+}  // namespace ravbot::gateway

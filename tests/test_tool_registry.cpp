@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <cstdlib>
@@ -17,7 +17,7 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/tools/tool_registry.hpp"
+#include "ravbot/tools/tool_registry.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
@@ -25,12 +25,12 @@
 class ToolRegistryTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_tools_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_tools_test");
 
     auto null_sink = std::make_shared<spdlog::sinks::null_sink_mt>();
     logger_ = std::make_shared<spdlog::logger>("test", null_sink);
 
-    tool_registry_ = std::make_unique<quantclaw::ToolRegistry>(logger_);
+    tool_registry_ = std::make_unique<ravbot::ToolRegistry>(logger_);
     tool_registry_->RegisterBuiltinTools();
     tool_registry_->SetWorkspace(test_dir_.string());
   }
@@ -43,7 +43,7 @@ class ToolRegistryTest : public ::testing::Test {
 
   std::filesystem::path test_dir_;
   std::shared_ptr<spdlog::logger> logger_;
-  std::unique_ptr<quantclaw::ToolRegistry> tool_registry_;
+  std::unique_ptr<ravbot::ToolRegistry> tool_registry_;
 };
 
 TEST_F(ToolRegistryTest, AllBuiltinToolsRegistered) {
@@ -62,13 +62,13 @@ TEST_F(ToolRegistryTest, AllBuiltinToolsRegistered) {
 TEST_F(ToolRegistryTest, ReadFileTool) {
   auto test_file = test_dir_ / "test.txt";
   std::ofstream file(test_file);
-  file << "Hello, QuantClaw!";
+  file << "Hello, RavBot!";
   file.close();
 
   nlohmann::json params = {{"path", test_file.string()}};
   std::string result = tool_registry_->ExecuteTool("read", params);
 
-  EXPECT_EQ(result, "Hello, QuantClaw!");
+  EXPECT_EQ(result, "Hello, RavBot!");
 }
 
 TEST_F(ToolRegistryTest, ReadNonExistentFile) {
@@ -80,7 +80,7 @@ TEST_F(ToolRegistryTest, ReadNonExistentFile) {
 TEST_F(ToolRegistryTest, WriteFileTool) {
   auto test_file = test_dir_ / "output.txt";
   nlohmann::json params = {{"path", test_file.string()},
-                           {"content", "This is written by QuantClaw!"}};
+                           {"content", "This is written by RavBot!"}};
 
   std::string result = tool_registry_->ExecuteTool("write", params);
 
@@ -89,7 +89,7 @@ TEST_F(ToolRegistryTest, WriteFileTool) {
   std::ifstream file(test_file);
   std::string content((std::istreambuf_iterator<char>(file)),
                       std::istreambuf_iterator<char>());
-  EXPECT_EQ(content, "This is written by QuantClaw!");
+  EXPECT_EQ(content, "This is written by RavBot!");
 }
 
 TEST_F(ToolRegistryTest, EditFileTool) {
@@ -248,14 +248,14 @@ TEST_F(ToolRegistryTest, SchemasHaveRequiredFields) {
 // --- empty registry ---
 
 TEST_F(ToolRegistryTest, EmptyRegistryNoTools) {
-  auto empty = std::make_unique<quantclaw::ToolRegistry>(logger_);
+  auto empty = std::make_unique<ravbot::ToolRegistry>(logger_);
   EXPECT_TRUE(empty->GetToolSchemas().empty());
   EXPECT_FALSE(empty->HasTool("read"));
 }
 
 TEST_F(ToolRegistryTest, DefaultWorkspaceUsesAgentWorkspaceLayoutForReadTool) {
   auto test_home =
-      quantclaw::test::MakeTestDir("quantclaw_default_workspace_test");
+      ravbot::test::MakeTestDir("ravbot_default_workspace_test");
   auto get_or_empty = [](const char* name) -> std::string {
     const char* value = std::getenv(name);
     return value ? value : "";
@@ -290,7 +290,7 @@ TEST_F(ToolRegistryTest, DefaultWorkspaceUsesAgentWorkspaceLayoutForReadTool) {
   };
 
   try {
-    auto workspace = test_home / ".quantclaw" / "agents" / "main" / "workspace";
+    auto workspace = test_home / ".ravbot" / "agents" / "main" / "workspace";
     std::filesystem::create_directories(workspace);
     auto test_file = workspace / "default-workspace.txt";
     {
@@ -298,7 +298,7 @@ TEST_F(ToolRegistryTest, DefaultWorkspaceUsesAgentWorkspaceLayoutForReadTool) {
       file << "workspace ok";
     }
 
-    auto registry = std::make_unique<quantclaw::ToolRegistry>(logger_);
+    auto registry = std::make_unique<ravbot::ToolRegistry>(logger_);
     registry->RegisterBuiltinTools();
 
     auto result = registry->ExecuteTool("read", {{"path", test_file.string()}});
@@ -314,7 +314,7 @@ TEST_F(ToolRegistryTest, DefaultWorkspaceUsesAgentWorkspaceLayoutForReadTool) {
 }
 
 TEST_F(ToolRegistryTest, MemoryGetUsesPlatformHomeWhenWorkspaceNotInjected) {
-  auto test_home = quantclaw::test::MakeTestDir("quantclaw_memory_get_home");
+  auto test_home = ravbot::test::MakeTestDir("ravbot_memory_get_home");
   auto get_or_empty = [](const char* name) -> std::string {
     const char* value = std::getenv(name);
     return value ? value : "";
@@ -349,14 +349,14 @@ TEST_F(ToolRegistryTest, MemoryGetUsesPlatformHomeWhenWorkspaceNotInjected) {
   };
 
   try {
-    auto workspace = test_home / ".quantclaw" / "agents" / "main" / "workspace";
+    auto workspace = test_home / ".ravbot" / "agents" / "main" / "workspace";
     std::filesystem::create_directories(workspace);
     {
       std::ofstream file(workspace / "MEMORY.md");
       file << "memory ok";
     }
 
-    auto registry = std::make_unique<quantclaw::ToolRegistry>(logger_);
+    auto registry = std::make_unique<ravbot::ToolRegistry>(logger_);
     registry->RegisterBuiltinTools();
 
     auto result = registry->ExecuteTool("memory_get", {{"path", "MEMORY.md"}});

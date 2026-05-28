@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/gateway/gateway_server.hpp"
+#include "ravbot/gateway/gateway_server.hpp"
 
 #include <chrono>
 #include <iomanip>
@@ -10,7 +10,7 @@
 #include <thread>
 #include <unordered_set>
 
-namespace quantclaw::gateway {
+namespace ravbot::gateway {
 
 GatewayServer::GatewayServer(int port, std::shared_ptr<spdlog::logger> logger)
     : port_(port), logger_(logger) {
@@ -535,11 +535,11 @@ bool GatewayServer::handle_hello(const std::string& conn_id,
   it->second.client_name = hello.client_name;
   it->second.client_version = hello.client_version;
   it->second.authenticated = true;
-  it->second.client_type = is_openclaw ? "openclaw" : "quantclaw";
+  it->second.client_type = is_openclaw ? "openclaw" : "ravbot";
 
   logger_->info("Client {} authenticated: role={}, client={}, type={}", conn_id,
                 hello.role, hello.client_name, it->second.client_type);
   return true;
 }
 
-}  // namespace quantclaw::gateway
+}  // namespace ravbot::gateway

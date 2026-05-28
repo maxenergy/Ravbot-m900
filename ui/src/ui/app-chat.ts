@@ -2,11 +2,10 @@ import { parseAgentSessionKey } from "../sessions/session-key-utils.js";
 import { scheduleChatScroll } from "./app-scroll.ts";
 import { setLastActiveSessionKey } from "./app-settings.ts";
 import { resetToolStream } from "./app-tool-stream.ts";
-import type { QuantClawApp } from "./app.ts";
+import type { RavBotApp } from "./app.ts";
 import { abortChatRun, loadChatHistory, sendChatMessage } from "./controllers/chat.ts";
 import { loadSessions } from "./controllers/sessions.ts";
 import type { GatewayHelloOk } from "./gateway.ts";
-import { normalizeBasePath } from "./navigation.ts";
 import type { ChatAttachment, ChatQueueItem } from "./ui-types.ts";
 import { generateUUID } from "./uuid.ts";
 
@@ -65,7 +64,7 @@ export async function handleAbortChat(host: ChatHost) {
     return;
   }
   host.chatMessage = "";
-  await abortChatRun(host as unknown as QuantClawApp);
+  await abortChatRun(host as unknown as RavBotApp);
 }
 
 function enqueueChatMessage(
@@ -104,7 +103,7 @@ async function sendChatMessageNow(
   },
 ) {
   resetToolStream(host as unknown as Parameters<typeof resetToolStream>[0]);
-  const runId = await sendChatMessage(host as unknown as QuantClawApp, message, opts?.attachments);
+  const runId = await sendChatMessage(host as unknown as RavBotApp, message, opts?.attachments);
   const ok = Boolean(runId);
   if (!ok && opts?.previousDraft != null) {
     host.chatMessage = opts.previousDraft;
@@ -204,8 +203,8 @@ export async function handleSendChat(
 
 export async function refreshChat(host: ChatHost, opts?: { scheduleScroll?: boolean }) {
   await Promise.all([
-    loadChatHistory(host as unknown as QuantClawApp),
-    loadSessions(host as unknown as QuantClawApp, {
+    loadChatHistory(host as unknown as RavBotApp),
+    loadSessions(host as unknown as RavBotApp, {
       activeMinutes: CHAT_SESSIONS_ACTIVE_MINUTES,
     }),
     refreshChatAvatar(host),
@@ -233,12 +232,6 @@ function resolveAgentIdForSession(host: ChatHost): string | null {
   return fallback || "main";
 }
 
-function buildAvatarMetaUrl(basePath: string, agentId: string): string {
-  const base = normalizeBasePath(basePath);
-  const encoded = encodeURIComponent(agentId);
-  return base ? `${base}/avatar/${encoded}?meta=1` : `/avatar/${encoded}?meta=1`;
-}
-
 export async function refreshChatAvatar(host: ChatHost) {
   if (!host.connected) {
     host.chatAvatarUrl = null;
@@ -249,18 +242,8 @@ export async function refreshChatAvatar(host: ChatHost) {
     host.chatAvatarUrl = null;
     return;
   }
+  // Avatar data is delivered through agent identity RPCs. The legacy
+  // /avatar/:agent?meta=1 HTTP probe has no gateway route in RavBot and causes
+  // noisy 404s during normal chat rendering.
   host.chatAvatarUrl = null;
-  const url = buildAvatarMetaUrl(host.basePath, agentId);
-  try {
-    const res = await fetch(url, { method: "GET" });
-    if (!res.ok) {
-      host.chatAvatarUrl = null;
-      return;
-    }
-    const data = (await res.json()) as { avatarUrl?: unknown };
-    const avatarUrl = typeof data.avatarUrl === "string" ? data.avatarUrl.trim() : "";
-    host.chatAvatarUrl = avatarUrl || null;
-  } catch {
-    host.chatAvatarUrl = null;
-  }
 }

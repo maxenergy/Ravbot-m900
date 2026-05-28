@@ -136,7 +136,7 @@ function resolveAssistantAvatarUrl(state: AppViewState): string | undefined {
 }
 
 export function renderApp(state: AppViewState) {
-  const quantClawVersion =
+  const ravBotVersion =
     (typeof state.hello?.server?.version === "string" && state.hello.server.version.trim()) ||
     state.updateAvailable?.currentVersion ||
     t("common.na");
@@ -232,11 +232,11 @@ export function renderApp(state: AppViewState) {
           </button>
           <div class="brand">
             <div class="brand-logo">
-              <img src=${basePath ? `${basePath}/quantclaw-logo.png` : "/quantclaw-logo.png"} alt="QuantClaw" />
+              <img src=${basePath ? `${basePath}/ravbot-logo.png` : "/ravbot-logo.png"} alt="RavBot" />
             </div>
             <div class="brand-text">
-              <div class="brand-title">QUANTCLAW</div>
-              <div class="brand-sub">Gateway Dashboard</div>
+              <div class="brand-title">RAVBOT</div>
+              <div class="brand-sub">${t("app.gatewayDashboard")}</div>
             </div>
           </div>
         </div>
@@ -244,7 +244,7 @@ export function renderApp(state: AppViewState) {
           <div class="pill">
             <span class="statusDot ${versionStatusClass}"></span>
             <span>${t("common.version")}</span>
-            <span class="mono">${quantClawVersion}</span>
+            <span class="mono">${ravBotVersion}</span>
           </div>
           <div class="pill">
             <span class="statusDot ${state.connected ? "ok" : ""}"></span>
@@ -288,10 +288,10 @@ export function renderApp(state: AppViewState) {
           <div class="nav-group__items">
             <a
               class="nav-item nav-item--external"
-              href="https://quantclaw.github.io/"
+              href="https://ravbot.github.io/"
               target="_blank"
               rel="noreferrer"
-              title="${t("common.docs")} (opens in new tab)"
+              title="${t("common.opensInNewTab", { label: t("common.docs") })}"
             >
               <span class="nav-item__icon" aria-hidden="true">${icons.book}</span>
               <span class="nav-item__text">${t("common.docs")}</span>
@@ -303,13 +303,13 @@ export function renderApp(state: AppViewState) {
         ${
           availableUpdate
             ? html`<div class="update-banner callout danger" role="alert">
-              <strong>Update available:</strong> v${availableUpdate.latestVersion}
-              (running v${availableUpdate.currentVersion}).
+              <strong>${t("update.available")}:</strong> v${availableUpdate.latestVersion}
+              (${t("update.runningVersion", { version: availableUpdate.currentVersion })}).
               <button
                 class="btn btn--sm update-banner__btn"
                 ?disabled=${state.updateRunning || !state.connected}
                 @click=${() => runUpdate(state)}
-              >${state.updateRunning ? "Updating…" : "Update now"}</button>
+              >${state.updateRunning ? t("update.updating") : t("update.updateNow")}</button>
             </div>`
             : nothing
         }

@@ -1,9 +1,9 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/usage_accumulator.hpp"
+#include "ravbot/core/usage_accumulator.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 void UsageAccumulator::Record(const std::string& session_key, int input_tokens,
                               int output_tokens) {
@@ -63,4 +63,4 @@ nlohmann::json UsageAccumulator::ToJson() const {
   return j;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

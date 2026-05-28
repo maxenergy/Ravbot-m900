@@ -2,7 +2,7 @@
 
 ## 配置文件
 
-QuantClaw 的配置存储在 `~/.quantclaw/quantclaw.json`（JSON5 格式，支持注释和尾逗号）。
+RavBot 的配置存储在 `~/.ravbot/ravbot.json`（JSON5 格式，支持注释和尾逗号）。
 
 完整带注释示例见仓库根目录的 `config.example.json`。
 
@@ -48,7 +48,7 @@ QuantClaw 的配置存储在 `~/.quantclaw/quantclaw.json`（JSON5 格式，支�
   "security": {
     "sandbox": {
       "enabled": true,
-      "allowedPaths": ["~/.quantclaw/agents/main/workspace"],
+      "allowedPaths": ["~/.ravbot/agents/main/workspace"],
       "deniedPaths": ["/etc", "/sys", "/proc"]
     }
   },
@@ -109,12 +109,12 @@ QuantClaw 的配置存储在 `~/.quantclaw/quantclaw.json`（JSON5 格式，支�
 如果你想走浏览器登录，而不是手动配置 `OPENAI_API_KEY`，请使用独立的 `openai-codex` provider：
 
 ```bash
-quantclaw models auth login --provider openai-codex
-quantclaw models auth status --provider openai-codex
-quantclaw models auth logout --provider openai-codex
+ravbot models auth login --provider openai-codex
+ravbot models auth status --provider openai-codex
+ravbot models auth logout --provider openai-codex
 ```
 
-凭证会保存在 `~/.quantclaw/auth/openai-codex.json`，并在可用时自动刷新。`status` 会显示本地是否已有缓存凭证，以及当前 access token 是否仍然有效或可刷新。`logout` 只会清除本地缓存凭证，不会把你当前配置的模型自动切回非 `openai-codex/...` 路径。Auth store 写盘采用原子替换，保存失败时不会把已有登录态一起删掉。OAuth 路径和标准 `openai` provider 是分开的：
+凭证会保存在 `~/.ravbot/auth/openai-codex.json`，并在可用时自动刷新。`status` 会显示本地是否已有缓存凭证，以及当前 access token 是否仍然有效或可刷新。`logout` 只会清除本地缓存凭证，不会把你当前配置的模型自动切回非 `openai-codex/...` 路径。Auth store 写盘采用原子替换，保存失败时不会把已有登录态一起删掉。OAuth 路径和标准 `openai` provider 是分开的：
 
 ```json
 {
@@ -137,15 +137,15 @@ quantclaw models auth logout --provider openai-codex
 如果你想使用 GitHub Copilot 支持的模型，可以通过独立的 `github-copilot` provider 走 GitHub device login：
 
 ```bash
-quantclaw models auth login --provider github-copilot
-quantclaw models auth status --provider github-copilot
-quantclaw models auth logout --provider github-copilot
+ravbot models auth login --provider github-copilot
+ravbot models auth status --provider github-copilot
+ravbot models auth logout --provider github-copilot
 
 # 快捷别名
-quantclaw models auth login-github-copilot
+ravbot models auth login-github-copilot
 ```
 
-长期凭证会保存在 `~/.quantclaw/auth/github-copilot.json`，短期 Copilot runtime token 会缓存在 `~/.quantclaw/auth/github-copilot.token-cache.json`。`status` 会显示本地是否已有缓存凭证，以及当前 access token 是否仍然有效或可刷新。`logout` 只会清除本地缓存凭证，不会把你当前配置的模型自动切回非 `github-copilot/...` 路径。Auth store 写盘采用原子替换，保存失败时不会把已有登录态一起删掉。运行时会优先读取 `COPILOT_GITHUB_TOKEN`，然后是 `GH_TOKEN`、`GITHUB_TOKEN`，如果都没有再回退到本地 auth store。
+长期凭证会保存在 `~/.ravbot/auth/github-copilot.json`，短期 Copilot runtime token 会缓存在 `~/.ravbot/auth/github-copilot.token-cache.json`。`status` 会显示本地是否已有缓存凭证，以及当前 access token 是否仍然有效或可刷新。`logout` 只会清除本地缓存凭证，不会把你当前配置的模型自动切回非 `github-copilot/...` 路径。Auth store 写盘采用原子替换，保存失败时不会把已有登录态一起删掉。运行时会优先读取 `COPILOT_GITHUB_TOKEN`，然后是 `GH_TOKEN`、`GITHUB_TOKEN`，如果都没有再回退到本地 auth store。
 
 ```json
 {
@@ -185,7 +185,7 @@ quantclaw models auth login-github-copilot
 | `controlUi.enabled` | `true` | 启用 Web 仪表板 |
 | `controlUi.port` | `18801` | 仪表板和 REST API 的 HTTP 端口 |
 
-**注意**：QuantClaw 使用 `18800-18801` 端口（不同于 OpenClaw 的 `18789-18790`），两者可同时运行。
+**注意**：RavBot 使用 `18800-18801` 端口（不同于 OpenClaw 的 `18789-18790`），两者可同时运行。
 
 ### 认证模式
 
@@ -233,8 +233,8 @@ curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:18801/api/status
 
 ### 修改 Token
 
-1. 编辑 `~/.quantclaw/quantclaw.json`，修改 `gateway.auth.token` 的值
-2. 应用更改：`quantclaw config reload`（或重启网关）
+1. 编辑 `~/.ravbot/ravbot.json`，修改 `gateway.auth.token` 的值
+2. 应用更改：`ravbot config reload`（或重启网关）
 3. 对于仪表板用户：清除 `127.0.0.1:18801` 的 localStorage，然后输入新 token
 
 ## 频道配置（`channels`）
@@ -283,7 +283,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:18801/api/status
   "security": {
     "sandbox": {
       "enabled": true,
-      "allowedPaths": ["~/.quantclaw/agents/main/workspace"],
+      "allowedPaths": ["~/.ravbot/agents/main/workspace"],
       "deniedPaths": ["/etc", "/sys", "/proc"]
     }
   }
@@ -318,7 +318,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:18801/api/status
 
 **日志级别：** `trace`、`debug`、`info`、`warn`、`error`
 
-日志文件存储在 `~/.quantclaw/logs/`。
+日志文件存储在 `~/.ravbot/logs/`。
 
 ## 环境变量替换
 
@@ -336,13 +336,13 @@ curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:18801/api/status
 ## 配置命令
 
 ```bash
-quantclaw config get                    # 查看完整配置
-quantclaw config get llm.model         # 查看指定配置项（点路径）
-quantclaw config set llm.model "anthropic/claude-sonnet-4-6"
-quantclaw config unset llm.temperature
-quantclaw config validate              # 验证语法和结构
-quantclaw config schema                # 查看配置 Schema
-quantclaw config reload                # 热重载（无需重启网关）
+ravbot config get                    # 查看完整配置
+ravbot config get llm.model         # 查看指定配置项（点路径）
+ravbot config set llm.model "anthropic/claude-sonnet-4-6"
+ravbot config unset llm.temperature
+ravbot config validate              # 验证语法和结构
+ravbot config schema                # 查看配置 Schema
+ravbot config reload                # 热重载（无需重启网关）
 ```
 
 ## 常见配置示例

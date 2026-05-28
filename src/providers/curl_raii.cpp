@@ -1,18 +1,39 @@
-// Copyright 2024 QuantClaw Authors. All Rights Reserved.
+// Copyright 2024 RavBot Authors. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/providers/curl_raii.hpp"
+#include "ravbot/providers/curl_raii.hpp"
+
+#include <mutex>
+#include <string>
 
 #include <curl/curl.h>
 
-namespace quantclaw {
+namespace ravbot {
+
+namespace {
+
+void ensure_curl_global_init() {
+  static std::once_flag curl_init_once;
+  std::call_once(curl_init_once, [] {
+    CURLcode result = curl_global_init(CURL_GLOBAL_DEFAULT);
+    if (result != CURLE_OK) {
+      throw std::runtime_error("Failed to initialize libcurl: " +
+                               std::string(curl_easy_strerror(result)));
+    }
+  });
+}
+
+}  // namespace
 
 // --- CurlHandle ---
 
-CurlHandle::CurlHandle() : handle_(curl_easy_init()) {
+CurlHandle::CurlHandle() : handle_(nullptr) {
+  ensure_curl_global_init();
+  handle_ = curl_easy_init();
   if (!handle_) {
     throw std::runtime_error("Failed to initialize CURL");
   }
+  curl_easy_setopt(handle_, CURLOPT_NOSIGNAL, 1L);
 }
 
 CurlHandle::~CurlHandle() {
@@ -63,4 +84,4 @@ void CurlSlist::append(const char* str) {
   list_ = curl_slist_append(list_, str);
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

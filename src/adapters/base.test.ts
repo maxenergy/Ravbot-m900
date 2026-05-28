@@ -34,23 +34,23 @@ function withChannelConfig(
   config: Record<string, unknown>,
   fn: () => Promise<void>
 ): Promise<void> {
-  const previousName = process.env.QUANTCLAW_CHANNEL_NAME;
-  const previousConfig = process.env.QUANTCLAW_CHANNEL_CONFIG;
+  const previousName = process.env.RAVBOT_CHANNEL_NAME;
+  const previousConfig = process.env.RAVBOT_CHANNEL_CONFIG;
 
-  process.env.QUANTCLAW_CHANNEL_NAME = "discord";
-  process.env.QUANTCLAW_CHANNEL_CONFIG = JSON.stringify(config);
+  process.env.RAVBOT_CHANNEL_NAME = "discord";
+  process.env.RAVBOT_CHANNEL_CONFIG = JSON.stringify(config);
 
   return fn().finally(() => {
     if (previousName === undefined) {
-      delete process.env.QUANTCLAW_CHANNEL_NAME;
+      delete process.env.RAVBOT_CHANNEL_NAME;
     } else {
-      process.env.QUANTCLAW_CHANNEL_NAME = previousName;
+      process.env.RAVBOT_CHANNEL_NAME = previousName;
     }
 
     if (previousConfig === undefined) {
-      delete process.env.QUANTCLAW_CHANNEL_CONFIG;
+      delete process.env.RAVBOT_CHANNEL_CONFIG;
     } else {
-      process.env.QUANTCLAW_CHANNEL_CONFIG = previousConfig;
+      process.env.RAVBOT_CHANNEL_CONFIG = previousConfig;
     }
   });
 }
@@ -96,7 +96,7 @@ test("allowedIds blocks messages when neither sender nor channel matches", async
 
 test("messages from different channels use separate session keys", async () => {
   await withChannelConfig({ token: "t" }, async () => {
-    process.env.QUANTCLAW_CHANNEL_NAME = "telegram";
+    process.env.RAVBOT_CHANNEL_NAME = "telegram";
     const adapter = new TestAdapter();
     await adapter.handlePlatformMessage("user-1", "chat-100", "msg1");
     await adapter.handlePlatformMessage("user-1", "chat-200", "msg2");
@@ -135,16 +135,16 @@ test("allowedChannels blocks messages from non-allowlisted channel", async () =>
 });
 
 test("default gateway URL is ws://127.0.0.1:18800 when env is unset", () => {
-  const prev = process.env.QUANTCLAW_GATEWAY_URL;
-  delete process.env.QUANTCLAW_GATEWAY_URL;
+  const prev = process.env.RAVBOT_GATEWAY_URL;
+  delete process.env.RAVBOT_GATEWAY_URL;
 
   const adapter = new TestAdapter();
   assert.equal((adapter as unknown as { gatewayUrl: string }).gatewayUrl, "ws://127.0.0.1:18800");
 
   if (prev === undefined) {
-    delete process.env.QUANTCLAW_GATEWAY_URL;
+    delete process.env.RAVBOT_GATEWAY_URL;
   } else {
-    process.env.QUANTCLAW_GATEWAY_URL = prev;
+    process.env.RAVBOT_GATEWAY_URL = prev;
   }
 });
 

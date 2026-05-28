@@ -1,13 +1,13 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/plugins/plugin_system.hpp"
+#include "ravbot/plugins/plugin_system.hpp"
 
 #include <filesystem>
 
-#include "quantclaw/platform/process.hpp"
+#include "ravbot/platform/process.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 namespace {
 
@@ -16,10 +16,10 @@ std::string find_sidecar_script() {
   std::string home_str = platform::home_directory();
 
   std::vector<std::string> candidates = {
-      home_str + "/.quantclaw/sidecar/index.js",
-      home_str + "/.quantclaw/sidecar/dist/index.js",
-      "/usr/lib/quantclaw/sidecar/index.js",
-      "/usr/local/lib/quantclaw/sidecar/index.js",
+      home_str + "/.ravbot/sidecar/index.js",
+      home_str + "/.ravbot/sidecar/dist/index.js",
+      "/usr/lib/ravbot/sidecar/index.js",
+      "/usr/local/lib/ravbot/sidecar/index.js",
   };
 
   for (const auto& path : candidates) {
@@ -38,7 +38,7 @@ PluginSystem::~PluginSystem() {
   Shutdown();
 }
 
-bool PluginSystem::Initialize(const QuantClawConfig& config,
+bool PluginSystem::Initialize(const RavBotConfig& config,
                               const std::filesystem::path& workspace_dir) {
   // Step 1: Discover and register plugins from manifests
   registry_.Discover(config, workspace_dir);
@@ -99,7 +99,7 @@ void PluginSystem::Shutdown() {
   sidecar_.reset();
 }
 
-bool PluginSystem::Reload(const QuantClawConfig& config,
+bool PluginSystem::Reload(const RavBotConfig& config,
                           const std::filesystem::path& workspace_dir) {
   registry_.Discover(config, workspace_dir);
 
@@ -247,4 +247,4 @@ bool PluginSystem::IsSidecarRunning() const {
   return sidecar_ && sidecar_->IsRunning();
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

@@ -1,4 +1,4 @@
-// Copyright 2024 QuantClaw Contributors
+// Copyright 2024 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
@@ -358,7 +358,7 @@ describe("PluginLoader (filesystem)", () => {
   let logger: ReturnType<typeof createTestLogger>;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "qc-loader-test-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ravbot-loader-test-"));
     logger = createTestLogger();
   });
 

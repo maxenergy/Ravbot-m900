@@ -1,10 +1,10 @@
 # Configuration Guide
 
-Configure QuantClaw for your specific use case.
+Configure RavBot for your specific use case.
 
 ## Configuration File
 
-QuantClaw stores its configuration at `~/.quantclaw/quantclaw.json` (JSON5 format — comments and trailing commas are supported).
+RavBot stores its configuration at `~/.ravbot/ravbot.json` (JSON5 format — comments and trailing commas are supported).
 
 A full annotated example is available in `config.example.json` in the repository root.
 
@@ -50,7 +50,7 @@ A full annotated example is available in `config.example.json` in the repository
   "security": {
     "sandbox": {
       "enabled": true,
-      "allowedPaths": ["~/.quantclaw/agents/main/workspace"],
+      "allowedPaths": ["~/.ravbot/agents/main/workspace"],
       "deniedPaths": ["/etc", "/sys", "/proc"]
     }
   },
@@ -116,12 +116,12 @@ Each key under `providers` defines a named provider:
 If you want a browser login flow instead of `OPENAI_API_KEY`, use the dedicated `openai-codex` provider:
 
 ```bash
-quantclaw models auth login --provider openai-codex
-quantclaw models auth status --provider openai-codex
-quantclaw models auth logout --provider openai-codex
+ravbot models auth login --provider openai-codex
+ravbot models auth status --provider openai-codex
+ravbot models auth logout --provider openai-codex
 ```
 
-Credentials are stored in `~/.quantclaw/auth/openai-codex.json` and refreshed automatically when possible. `status` reports whether cached credentials exist and whether the access token is still valid or refreshable. `logout` clears only the local cached credentials, it does not switch your configured model away from `openai-codex/...`. Auth-store updates use atomic replacement, so a failed write does not wipe an existing cached login. The OAuth-backed provider is configured separately from the standard `openai` provider:
+Credentials are stored in `~/.ravbot/auth/openai-codex.json` and refreshed automatically when possible. `status` reports whether cached credentials exist and whether the access token is still valid or refreshable. `logout` clears only the local cached credentials, it does not switch your configured model away from `openai-codex/...`. Auth-store updates use atomic replacement, so a failed write does not wipe an existing cached login. The OAuth-backed provider is configured separately from the standard `openai` provider:
 
 ```json
 {
@@ -144,15 +144,15 @@ Use `openai` when you want direct API-key access, and `openai-codex` when you wa
 If you want to use GitHub Copilot-backed models, authenticate the dedicated `github-copilot` provider through GitHub device login:
 
 ```bash
-quantclaw models auth login --provider github-copilot
-quantclaw models auth status --provider github-copilot
-quantclaw models auth logout --provider github-copilot
+ravbot models auth login --provider github-copilot
+ravbot models auth status --provider github-copilot
+ravbot models auth logout --provider github-copilot
 
 # Convenience alias
-quantclaw models auth login-github-copilot
+ravbot models auth login-github-copilot
 ```
 
-Credentials are stored in `~/.quantclaw/auth/github-copilot.json`, and short-lived Copilot runtime tokens are cached in `~/.quantclaw/auth/github-copilot.token-cache.json`. `status` reports whether cached credentials exist and whether the access token is still valid or refreshable. `logout` clears only the local cached credentials, it does not switch your configured model away from `github-copilot/...`. Auth-store updates use atomic replacement, so a failed write does not wipe an existing cached login. Runtime token resolution prefers `COPILOT_GITHUB_TOKEN`, then `GH_TOKEN`, then `GITHUB_TOKEN`, and only falls back to the local auth store if no environment token is set.
+Credentials are stored in `~/.ravbot/auth/github-copilot.json`, and short-lived Copilot runtime tokens are cached in `~/.ravbot/auth/github-copilot.token-cache.json`. `status` reports whether cached credentials exist and whether the access token is still valid or refreshable. `logout` clears only the local cached credentials, it does not switch your configured model away from `github-copilot/...`. Auth-store updates use atomic replacement, so a failed write does not wipe an existing cached login. Runtime token resolution prefers `COPILOT_GITHUB_TOKEN`, then `GH_TOKEN`, then `GITHUB_TOKEN`, and only falls back to the local auth store if no environment token is set.
 
 ```json
 {
@@ -192,7 +192,7 @@ Use the `github-copilot/...` namespace when you want account-backed GitHub Copil
 | `controlUi.enabled` | `true` | Enable the web dashboard |
 | `controlUi.port` | `18801` | HTTP port for dashboard and REST API |
 
-**Note:** QuantClaw uses ports `18800-18801` (different from OpenClaw's `18789-18790`), so both can run simultaneously.
+**Note:** RavBot uses ports `18800-18801` (different from OpenClaw's `18789-18790`), so both can run simultaneously.
 
 ### Authentication Modes
 
@@ -240,8 +240,8 @@ To disable authentication (not recommended for production):
 
 ### Changing Your Token
 
-1. Edit `~/.quantclaw/quantclaw.json` and update `gateway.auth.token`
-2. Apply the change: `quantclaw config reload` (or restart the gateway)
+1. Edit `~/.ravbot/ravbot.json` and update `gateway.auth.token`
+2. Apply the change: `ravbot config reload` (or restart the gateway)
 3. For dashboard users: clear localStorage for `127.0.0.1:18801` and enter the new token
 
 ## Channel Configuration (`channels`)
@@ -292,7 +292,7 @@ To disable authentication (not recommended for production):
   "security": {
     "sandbox": {
       "enabled": true,
-      "allowedPaths": ["~/.quantclaw/agents/main/workspace"],
+      "allowedPaths": ["~/.ravbot/agents/main/workspace"],
       "deniedPaths": ["/etc", "/sys", "/proc"]
     }
   }
@@ -302,7 +302,7 @@ To disable authentication (not recommended for production):
 | Key | Default | Description |
 |-----|---------|-------------|
 | `sandbox.enabled` | `true` | Enable filesystem sandbox |
-| `sandbox.allowedPaths` | `["~/.quantclaw/agents/main/workspace"]` | Paths the agent may read/write |
+| `sandbox.allowedPaths` | `["~/.ravbot/agents/main/workspace"]` | Paths the agent may read/write |
 | `sandbox.deniedPaths` | `["/etc", "/sys", "/proc"]` | Paths always blocked |
 
 ## MCP Configuration (`mcp`)
@@ -333,7 +333,7 @@ To disable authentication (not recommended for production):
 
 **Log levels:** `trace`, `debug`, `info`, `warn`, `error`
 
-Log files are stored at `~/.quantclaw/logs/`. The main log (`quantclaw.log`) is size-rotated automatically; the gateway service log (`gateway.log`) is time-pruned at startup.
+Log files are stored at `~/.ravbot/logs/`. The main log (`ravbot.log`) is size-rotated automatically; the gateway service log (`gateway.log`) is time-pruned at startup.
 
 ## Environment Variable Substitution
 
@@ -356,25 +356,25 @@ Configuration supports `${VAR}` substitution from the shell environment:
 
 ```bash
 # View full config
-quantclaw config get
+ravbot config get
 
 # Get a specific value (dot-path)
-quantclaw config get llm.model
+ravbot config get llm.model
 
 # Change a value
-quantclaw config set llm.model "anthropic/claude-sonnet-4-6"
+ravbot config set llm.model "anthropic/claude-sonnet-4-6"
 
 # Remove a key
-quantclaw config unset llm.temperature
+ravbot config unset llm.temperature
 
 # Validate syntax and structure
-quantclaw config validate
+ravbot config validate
 
 # Show configuration schema
-quantclaw config schema
+ravbot config schema
 
 # Hot-reload config (no gateway restart needed)
-quantclaw config reload
+ravbot config reload
 ```
 
 ## Common Setups

@@ -1,11 +1,31 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { i18n, t } from "../lib/translate.ts";
+import { en } from "../locales/en.ts";
+import { pt_BR } from "../locales/pt-BR.ts";
+import { zh_CN } from "../locales/zh-CN.ts";
+import { zh_TW } from "../locales/zh-TW.ts";
+import type { TranslationMap } from "../lib/types.ts";
+
+function installLocalStorage() {
+  const store = new Map<string, string>();
+  vi.stubGlobal("localStorage", {
+    clear: () => store.clear(),
+    getItem: (key: string) => store.get(key) ?? null,
+    removeItem: (key: string) => store.delete(key),
+    setItem: (key: string, value: string) => store.set(key, String(value)),
+  });
+}
 
 describe("i18n", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    installLocalStorage();
     localStorage.clear();
     // Reset to English
-    void i18n.setLocale("en");
+    await i18n.setLocale("en");
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("should return the key if translation is missing", () => {
@@ -21,11 +41,52 @@ describe("i18n", () => {
   });
 
   it("should fallback to English if key is missing in another locale", async () => {
-    // We haven't registered other locales in the test environment yet,
-    // but the logic should fallback to 'en' map which is always there.
     await i18n.setLocale("zh-CN");
-    // Since we don't mock the import, it might fail to load zh-CN,
-    // but let's assume it falls back to English for now.
-    expect(t("common.health")).toBeDefined();
+    expect(t("non.existent.key")).toBe("non.existent.key");
+  });
+
+  it("should load Simplified Chinese translations", async () => {
+    await i18n.setLocale("zh-CN");
+    expect(t("common.health")).toBe("健康状况");
+  });
+});
+
+describe("i18n startup locale", () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllGlobals();
+  });
+
+  it("loads a saved Chinese locale even when it is already selected at startup", async () => {
+    installLocalStorage();
+    localStorage.setItem("ravbot.i18n.locale", "zh-CN");
+    vi.resetModules();
+
+    const module = await import("../lib/translate.ts");
+    await module.i18n.ready;
+
+    expect(module.i18n.getLocale()).toBe("zh-CN");
+    expect(module.t("common.health")).toBe("健康状况");
+  });
+});
+
+function flattenKeys(map: TranslationMap, prefix = ""): string[] {
+  return Object.entries(map).flatMap(([key, value]) => {
+    const next = prefix ? `${prefix}.${key}` : key;
+    return typeof value === "string" ? [next] : flattenKeys(value, next);
+  });
+}
+
+describe("locale maps", () => {
+  it("keeps translated locale keys aligned with English", () => {
+    const expected = flattenKeys(en).toSorted();
+
+    for (const [locale, map] of [
+      ["zh-CN", zh_CN],
+      ["zh-TW", zh_TW],
+      ["pt-BR", pt_BR],
+    ] as const) {
+      expect(flattenKeys(map).toSorted(), locale).toEqual(expected);
+    }
   });
 });

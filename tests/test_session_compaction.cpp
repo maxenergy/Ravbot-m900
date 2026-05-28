@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/core/session_compaction.hpp"
+#include "ravbot/core/session_compaction.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace quantclaw;
+using namespace ravbot;
 using json = nlohmann::json;
 
 static json make_msg(const std::string& role, const std::string& content) {

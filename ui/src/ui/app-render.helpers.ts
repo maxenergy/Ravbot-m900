@@ -4,7 +4,7 @@ import { t } from "../i18n/index.ts";
 import { refreshChat } from "./app-chat.ts";
 import { syncUrlWithSessionKey } from "./app-settings.ts";
 import type { AppViewState } from "./app-view-state.ts";
-import { QuantClawApp } from "./app.ts";
+import { RavBotApp } from "./app.ts";
 import { ChatState, loadChatHistory } from "./controllers/chat.ts";
 import { icons } from "./icons.ts";
 import { iconForTab, pathForTab, titleForTab, type Tab } from "./navigation.ts";
@@ -36,10 +36,10 @@ function resetChatStateForSessionSwitch(state: AppViewState, sessionKey: string)
   state.sessionKey = sessionKey;
   state.chatMessage = "";
   state.chatStream = null;
-  (state as unknown as QuantClawApp).chatStreamStartedAt = null;
+  (state as unknown as RavBotApp).chatStreamStartedAt = null;
   state.chatRunId = null;
-  (state as unknown as QuantClawApp).resetToolStream();
-  (state as unknown as QuantClawApp).resetChatScroll();
+  (state as unknown as RavBotApp).resetToolStream();
+  (state as unknown as RavBotApp).resetChatScroll();
   state.applySettings({
     ...state.settings,
     sessionKey,
@@ -138,10 +138,10 @@ export function renderChatControls(state: AppViewState) {
             state.sessionKey = next;
             state.chatMessage = "";
             state.chatStream = null;
-            (state as unknown as QuantClawApp).chatStreamStartedAt = null;
+            (state as unknown as RavBotApp).chatStreamStartedAt = null;
             state.chatRunId = null;
-            (state as unknown as QuantClawApp).resetToolStream();
-            (state as unknown as QuantClawApp).resetChatScroll();
+            (state as unknown as RavBotApp).resetToolStream();
+            (state as unknown as RavBotApp).resetChatScroll();
             state.applySettings({
               ...state.settings,
               sessionKey: next,
@@ -170,7 +170,7 @@ export function renderChatControls(state: AppViewState) {
         class="btn btn--sm btn--icon"
         ?disabled=${state.chatLoading || !state.connected}
         @click=${async () => {
-          const app = state as unknown as QuantClawApp;
+          const app = state as unknown as RavBotApp;
           app.chatManualRefreshInFlight = true;
           app.chatNewMessagesBelow = false;
           await app.updateComplete;
@@ -410,14 +410,14 @@ export function renderThemeToggle(state: AppViewState) {
 
   return html`
     <div class="theme-toggle" style="--theme-index: ${index};">
-      <div class="theme-toggle__track" role="group" aria-label="Theme">
+      <div class="theme-toggle__track" role="group" aria-label=${t("theme.label")}>
         <span class="theme-toggle__indicator"></span>
         <button
           class="theme-toggle__button ${state.theme === "system" ? "active" : ""}"
           @click=${applyTheme("system")}
           aria-pressed=${state.theme === "system"}
-          aria-label="System theme"
-          title="System"
+          aria-label=${t("theme.systemTheme")}
+          title=${t("theme.system")}
         >
           ${renderMonitorIcon()}
         </button>
@@ -425,8 +425,8 @@ export function renderThemeToggle(state: AppViewState) {
           class="theme-toggle__button ${state.theme === "light" ? "active" : ""}"
           @click=${applyTheme("light")}
           aria-pressed=${state.theme === "light"}
-          aria-label="Light theme"
-          title="Light"
+          aria-label=${t("theme.lightTheme")}
+          title=${t("theme.light")}
         >
           ${renderSunIcon()}
         </button>
@@ -434,8 +434,8 @@ export function renderThemeToggle(state: AppViewState) {
           class="theme-toggle__button ${state.theme === "dark" ? "active" : ""}"
           @click=${applyTheme("dark")}
           aria-pressed=${state.theme === "dark"}
-          aria-label="Dark theme"
-          title="Dark"
+          aria-label=${t("theme.darkTheme")}
+          title=${t("theme.dark")}
         >
           ${renderMoonIcon()}
         </button>

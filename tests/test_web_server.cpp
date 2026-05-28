@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <chrono>
@@ -9,7 +9,7 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/web/web_server.hpp"
+#include "ravbot/web/web_server.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
@@ -29,19 +29,19 @@ class WebServerTest : public ::testing::Test {
   }
 
   int find_free_port() {
-    return quantclaw::test::FindFreePort();
+    return ravbot::test::FindFreePort();
   }
 
   std::shared_ptr<spdlog::logger> logger_;
-  std::unique_ptr<quantclaw::web::WebServer> server_;
+  std::unique_ptr<ravbot::web::WebServer> server_;
 };
 
 TEST_F(WebServerTest, HealthEndpoint) {
   int port = find_free_port();
-  server_ = std::make_unique<quantclaw::web::WebServer>(port, logger_);
-  quantclaw::test::ReleaseHeldPorts();
+  server_ = std::make_unique<ravbot::web::WebServer>(port, logger_);
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   httplib::Client cli("127.0.0.1", port);
@@ -56,7 +56,7 @@ TEST_F(WebServerTest, HealthEndpoint) {
 
 TEST_F(WebServerTest, CustomGetRoute) {
   int port = find_free_port();
-  server_ = std::make_unique<quantclaw::web::WebServer>(port, logger_);
+  server_ = std::make_unique<ravbot::web::WebServer>(port, logger_);
 
   server_->AddRoute("/api/test", "GET",
                     [](const std::string& /*method*/,
@@ -64,9 +64,9 @@ TEST_F(WebServerTest, CustomGetRoute) {
                       return R"({"result":"hello"})";
                     });
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   httplib::Client cli("127.0.0.1", port);
@@ -81,7 +81,7 @@ TEST_F(WebServerTest, CustomGetRoute) {
 
 TEST_F(WebServerTest, CustomPostRoute) {
   int port = find_free_port();
-  server_ = std::make_unique<quantclaw::web::WebServer>(port, logger_);
+  server_ = std::make_unique<ravbot::web::WebServer>(port, logger_);
 
   server_->AddRoute("/api/echo", "POST",
                     [](const std::string& /*method*/,
@@ -90,9 +90,9 @@ TEST_F(WebServerTest, CustomPostRoute) {
                       return nlohmann::json({{"echo", j["msg"]}}).dump();
                     });
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   httplib::Client cli("127.0.0.1", port);
@@ -107,11 +107,11 @@ TEST_F(WebServerTest, CustomPostRoute) {
 
 TEST_F(WebServerTest, StartAndStop) {
   int port = find_free_port();
-  server_ = std::make_unique<quantclaw::web::WebServer>(port, logger_);
+  server_ = std::make_unique<ravbot::web::WebServer>(port, logger_);
 
-  quantclaw::test::ReleaseHeldPorts();
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   // Verify it's reachable
@@ -134,10 +134,10 @@ TEST_F(WebServerTest, StartAndStop) {
 
 TEST_F(WebServerTest, ResponseContentType) {
   int port = find_free_port();
-  server_ = std::make_unique<quantclaw::web::WebServer>(port, logger_);
-  quantclaw::test::ReleaseHeldPorts();
+  server_ = std::make_unique<ravbot::web::WebServer>(port, logger_);
+  ravbot::test::ReleaseHeldPorts();
   server_->Start();
-  ASSERT_TRUE(quantclaw::test::WaitForServerReady(port, 5000))
+  ASSERT_TRUE(ravbot::test::WaitForServerReady(port, 5000))
       << "Server not ready on port " << port;
 
   httplib::Client cli("127.0.0.1", port);

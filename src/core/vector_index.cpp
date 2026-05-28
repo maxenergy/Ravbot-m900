@@ -1,12 +1,12 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/vector_index.hpp"
+#include "ravbot/core/vector_index.hpp"
 
 #include <algorithm>
 #include <cmath>
 
-namespace quantclaw {
+namespace ravbot {
 
 void VectorIndex::Add(VectorEntry entry) {
   entries_.push_back(std::move(entry));
@@ -60,4 +60,4 @@ VectorIndex::Search(const std::vector<float>& query, int top_k) const {
   return results;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

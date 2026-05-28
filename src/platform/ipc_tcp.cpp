@@ -1,11 +1,11 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 // TCP loopback IPC - single implementation for Linux, macOS, and Windows.
 // Replaces ipc_unix.cpp (AF_UNIX) and ipc_win32.cpp (Named Pipes).
 //
 // The C++ parent binds to 127.0.0.1:0 (OS picks a free port), then passes
-// the port to the sidecar child via QUANTCLAW_PORT. The sidecar connects
+// the port to the sidecar child via RAVBOT_PORT. The sidecar connects
 // back with net.createConnection(port, "127.0.0.1").
 
 #include <chrono>
@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "quantclaw/platform/ipc.hpp"
+#include "ravbot/platform/ipc.hpp"
 
 #ifdef _WIN32
 // ---- Windows WinSock2 ----
@@ -64,7 +64,7 @@ inline void close_fd(socket_t s) {
 }  // namespace
 #endif
 
-namespace quantclaw::platform {
+namespace ravbot::platform {
 
 namespace {
 
@@ -296,4 +296,4 @@ void ipc_set_permissions(const std::string& /*path*/, int /*mode*/) {
   // No-op: TCP has no socket file with Unix permissions.
 }
 
-}  // namespace quantclaw::platform
+}  // namespace ravbot::platform

@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/auth/provider_auth.hpp"
+#include "ravbot/auth/provider_auth.hpp"
 
 #include <cerrno>
 #include <filesystem>
@@ -20,9 +20,9 @@
 
 #include <nlohmann/json.hpp>
 
-#include "quantclaw/platform/process.hpp"
+#include "ravbot/platform/process.hpp"
 
-namespace quantclaw::auth {
+namespace ravbot::auth {
 namespace {
 
 #ifdef _WIN32
@@ -98,7 +98,7 @@ ProviderAuthStore::ProviderAuthStore(std::filesystem::path path)
 
 std::filesystem::path
 ProviderAuthStore::DefaultPathFor(const std::string& provider_id) {
-  return std::filesystem::path(platform::home_directory()) / ".quantclaw" /
+  return std::filesystem::path(platform::home_directory()) / ".ravbot" /
          "auth" / (provider_id + ".json");
 }
 
@@ -206,4 +206,4 @@ bool ProviderAuthStore::Clear() const {
   return removed;
 }
 
-}  // namespace quantclaw::auth
+}  // namespace ravbot::auth

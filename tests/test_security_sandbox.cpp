@@ -1,11 +1,11 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <filesystem>
 #include <memory>
 
-#include "quantclaw/platform/process.hpp"
-#include "quantclaw/security/sandbox.hpp"
+#include "ravbot/platform/process.hpp"
+#include "ravbot/security/sandbox.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
@@ -19,7 +19,7 @@
 class SandboxTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_sandbox_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_sandbox_test");
   }
 
   void TearDown() override {
@@ -32,7 +32,7 @@ class SandboxTest : public ::testing::Test {
 };
 
 TEST_F(SandboxTest, AllowedPathWithinWorkspace) {
-  quantclaw::Sandbox sandbox(test_dir_, {test_dir_.string()},  // allowed
+  ravbot::Sandbox sandbox(test_dir_, {test_dir_.string()},  // allowed
                              {},                               // denied
                              {},  // allowed commands
                              {}   // denied commands
@@ -43,7 +43,7 @@ TEST_F(SandboxTest, AllowedPathWithinWorkspace) {
 }
 
 TEST_F(SandboxTest, DeniedPathOutsideWorkspace) {
-  quantclaw::Sandbox sandbox(test_dir_, {test_dir_.string()},  // allowed
+  ravbot::Sandbox sandbox(test_dir_, {test_dir_.string()},  // allowed
                              {},                               // denied
                              {}, {});
 
@@ -51,7 +51,7 @@ TEST_F(SandboxTest, DeniedPathOutsideWorkspace) {
 }
 
 TEST_F(SandboxTest, ExplicitDenyOverridesAllow) {
-  quantclaw::Sandbox sandbox(test_dir_, {"/"},  // allow everything
+  ravbot::Sandbox sandbox(test_dir_, {"/"},  // allow everything
                              {"/etc"},          // but deny /etc
                              {}, {});
 
@@ -60,7 +60,7 @@ TEST_F(SandboxTest, ExplicitDenyOverridesAllow) {
 }
 
 TEST_F(SandboxTest, EmptyAllowedPathsPermitsAll) {
-  quantclaw::Sandbox sandbox(
+  ravbot::Sandbox sandbox(
       test_dir_, {},  // no allowed paths → permit all (except denied)
       {}, {}, {});
 
@@ -68,13 +68,13 @@ TEST_F(SandboxTest, EmptyAllowedPathsPermitsAll) {
 }
 
 TEST_F(SandboxTest, SanitizePathTraversal) {
-  quantclaw::Sandbox sandbox(test_dir_, {}, {}, {}, {});
+  ravbot::Sandbox sandbox(test_dir_, {}, {}, {}, {});
 
   EXPECT_THROW(sandbox.SanitizePath("../../../etc/passwd"), std::runtime_error);
 }
 
 TEST_F(SandboxTest, SanitizeNormalPath) {
-  quantclaw::Sandbox sandbox(test_dir_, {}, {}, {}, {});
+  ravbot::Sandbox sandbox(test_dir_, {}, {}, {}, {});
 
   auto result = sandbox.SanitizePath(test_dir_.string() + "/SOUL.md");
   EXPECT_FALSE(result.empty());
@@ -83,37 +83,37 @@ TEST_F(SandboxTest, SanitizeNormalPath) {
 // --- Static validators ---
 
 TEST_F(SandboxTest, ValidateFilePath) {
-  EXPECT_TRUE(quantclaw::Sandbox::ValidateFilePath("/tmp/test.txt", "/tmp"));
+  EXPECT_TRUE(ravbot::Sandbox::ValidateFilePath("/tmp/test.txt", "/tmp"));
   EXPECT_TRUE(
-      quantclaw::Sandbox::ValidateFilePath("/tmp/sub/dir/file.txt", "/tmp"));
+      ravbot::Sandbox::ValidateFilePath("/tmp/sub/dir/file.txt", "/tmp"));
   EXPECT_FALSE(
-      quantclaw::Sandbox::ValidateFilePath("../../etc/passwd", "/tmp"));
+      ravbot::Sandbox::ValidateFilePath("../../etc/passwd", "/tmp"));
   // Absolute path outside workspace must be rejected.
-  EXPECT_FALSE(quantclaw::Sandbox::ValidateFilePath("/etc/passwd", "/tmp"));
+  EXPECT_FALSE(ravbot::Sandbox::ValidateFilePath("/etc/passwd", "/tmp"));
 #ifdef _WIN32
-  EXPECT_FALSE(quantclaw::Sandbox::ValidateFilePath(
+  EXPECT_FALSE(ravbot::Sandbox::ValidateFilePath(
       "C:\\Windows\\win.ini", "C:\\Users\\test\\workspace"));
-  EXPECT_TRUE(quantclaw::Sandbox::ValidateFilePath(
+  EXPECT_TRUE(ravbot::Sandbox::ValidateFilePath(
       "C:\\Users\\test\\workspace\\file.txt", "C:\\Users\\test\\workspace"));
 #endif
 }
 
 TEST_F(SandboxTest, ValidateShellCommandSafe) {
-  EXPECT_TRUE(quantclaw::Sandbox::ValidateShellCommand("ls -la"));
-  EXPECT_TRUE(quantclaw::Sandbox::ValidateShellCommand("echo hello"));
+  EXPECT_TRUE(ravbot::Sandbox::ValidateShellCommand("ls -la"));
+  EXPECT_TRUE(ravbot::Sandbox::ValidateShellCommand("echo hello"));
 }
 
 TEST_F(SandboxTest, ValidateShellCommandDangerous) {
-  EXPECT_FALSE(quantclaw::Sandbox::ValidateShellCommand("rm -rf /"));
+  EXPECT_FALSE(ravbot::Sandbox::ValidateShellCommand("rm -rf /"));
   EXPECT_FALSE(
-      quantclaw::Sandbox::ValidateShellCommand("dd if=/dev/zero of=/dev/sda"));
-  EXPECT_FALSE(quantclaw::Sandbox::ValidateShellCommand("mkfs.ext4 /dev/sda"));
+      ravbot::Sandbox::ValidateShellCommand("dd if=/dev/zero of=/dev/sda"));
+  EXPECT_FALSE(ravbot::Sandbox::ValidateShellCommand("mkfs.ext4 /dev/sda"));
 }
 
 // --- Command filtering ---
 
 TEST_F(SandboxTest, DenyCommandByPattern) {
-  quantclaw::Sandbox sandbox(test_dir_, {}, {}, {}, {"rm\\s+-rf"}
+  ravbot::Sandbox sandbox(test_dir_, {}, {}, {}, {"rm\\s+-rf"}
                              // denied command pattern (regex)
   );
 
@@ -127,14 +127,14 @@ TEST_F(SandboxTest, ApplyResourceLimitsDoesNotThrow) {
   // ApplyResourceLimits is now intentionally a no-op (resource limits are
   // applied inside exec_capture on the child process). Just verify it
   // doesn't throw.
-  EXPECT_NO_THROW(quantclaw::Sandbox::ApplyResourceLimits());
+  EXPECT_NO_THROW(ravbot::Sandbox::ApplyResourceLimits());
 }
 
 #ifdef __linux__
 TEST_F(SandboxTest, ResourceLimitsAppliedInExecCapture) {
   // Verify that resource limits are applied in the child spawned by
   // exec_capture, not on the host process.
-  auto result = quantclaw::platform::exec_capture("ulimit -t", 5);
+  auto result = ravbot::platform::exec_capture("ulimit -t", 5);
   // The child should see the CPU soft limit (30 seconds).
   EXPECT_EQ(result.exit_code, 0);
   // Trim trailing whitespace.

@@ -1,12 +1,12 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/plugins/plugin_manifest.hpp"
+#include "ravbot/plugins/plugin_manifest.hpp"
 
 #include <fstream>
 #include <stdexcept>
 
-namespace quantclaw {
+namespace ravbot {
 
 PluginManifest PluginManifest::Parse(const nlohmann::json& j) {
   PluginManifest m;
@@ -120,4 +120,4 @@ std::string plugin_origin_to_string(PluginOrigin origin) {
   return "unknown";
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

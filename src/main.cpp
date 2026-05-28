@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <algorithm>
@@ -21,23 +21,24 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/cli/agent_commands.hpp"
-#include "quantclaw/cli/cli_manager.hpp"
-#include "quantclaw/cli/gateway_commands.hpp"
-#include "quantclaw/cli/model_auth_commands.hpp"
-#include "quantclaw/cli/onboard_commands.hpp"
-#include "quantclaw/cli/session_commands.hpp"
-#include "quantclaw/common/parse_util.hpp"
-#include "quantclaw/config.hpp"
-#include "quantclaw/core/memory_search.hpp"
-#include "quantclaw/core/skill_loader.hpp"
-#include "quantclaw/gateway/gateway_client.hpp"
-#include "quantclaw/platform/process.hpp"
+#include "ravbot/cli/agent_commands.hpp"
+#include "ravbot/cli/cli_manager.hpp"
+#include "ravbot/cli/gateway_commands.hpp"
+#include "ravbot/cli/model_auth_commands.hpp"
+#include "ravbot/cli/onboard_commands.hpp"
+#include "ravbot/cli/session_commands.hpp"
+#include "ravbot/common/parse_util.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/core/memory_search.hpp"
+#include "ravbot/core/skill_loader.hpp"
+#include "ravbot/gateway/gateway_client.hpp"
+#include "ravbot/licensing/license_manager.hpp"
+#include "ravbot/platform/process.hpp"
 
-// Bring port/URL constants into scope (avoids quantclaw:: prefix for literals)
-using quantclaw::kDefaultGatewayPort;
-using quantclaw::kDefaultGatewayUrl;
-using quantclaw::kDefaultHttpPort;
+// Bring port/URL constants into scope (avoids ravbot:: prefix for literals)
+using ravbot::kDefaultGatewayPort;
+using ravbot::kDefaultGatewayUrl;
+using ravbot::kDefaultHttpPort;
 
 static spdlog::level::level_enum parse_log_level(const std::string& s) {
   if (s == "trace")
@@ -110,7 +111,7 @@ create_logger(const std::string& log_level = "info",
       // unlimited).
       int retain = std::clamp(log_retain_days, 0, 65535);
       auto file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
-          log_dir + "/quantclaw.log", 0, 0,  // rotate at 00:00 local time
+          log_dir + "/ravbot.log", 0, 0,  // rotate at 00:00 local time
           false,                             // truncate = false (append)
           static_cast<uint16_t>(retain));
       file_sink->set_level(spdlog::level::debug);
@@ -127,7 +128,7 @@ create_logger(const std::string& log_level = "info",
   }
 
   auto logger =
-      std::make_shared<spdlog::logger>("quantclaw", sinks.begin(), sinks.end());
+      std::make_shared<spdlog::logger>("ravbot", sinks.begin(), sinks.end());
   logger->set_level(spdlog::level::trace);  // sinks control their own levels
   spdlog::set_default_logger(logger);
   return logger;
@@ -138,7 +139,7 @@ int main(int argc, char* argv[]) {
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     if ((arg == "--config" || arg == "-c") && i + 1 < argc) {
-      quantclaw::QuantClawConfig::set_config_path(argv[i + 1]);
+      ravbot::RavBotConfig::set_config_path(argv[i + 1]);
       // Remove --config <path> from argv so commands don't see it
       for (int j = i; j + 2 < argc; ++j) {
         argv[j] = argv[j + 2];
@@ -156,19 +157,19 @@ int main(int argc, char* argv[]) {
   std::string gateway_url = kDefaultGatewayUrl;
   std::string auth_token;
   try {
-    auto cfg = quantclaw::QuantClawConfig::LoadFromFile(
-        quantclaw::QuantClawConfig::DefaultConfigPath());
+    auto cfg = ravbot::RavBotConfig::LoadFromFile(
+        ravbot::RavBotConfig::DefaultConfigPath());
     int port = cfg.gateway.port > 0 ? cfg.gateway.port : kDefaultGatewayPort;
     gateway_url = "ws://127.0.0.1:" + std::to_string(port);
     auth_token = cfg.gateway.auth.token;
     if (auth_token.empty()) {
-      const char* env_token = std::getenv("QUANTCLAW_AUTH_TOKEN");
+      const char* env_token = std::getenv("RAVBOT_AUTH_TOKEN");
       if (env_token)
         auth_token = env_token;
     }
     // Rebuild logger with config-specified level and log directory.
     auto cfg_dir =
-        std::filesystem::path(quantclaw::QuantClawConfig::DefaultConfigPath())
+        std::filesystem::path(ravbot::RavBotConfig::DefaultConfigPath())
             .parent_path();
     logger = create_logger(cfg.system.log_level, (cfg_dir / "logs").string(),
                            cfg.system.log_retention_days,
@@ -177,11 +178,29 @@ int main(int argc, char* argv[]) {
     // No config file yet — defaults are fine.
   }
 
+  std::vector<std::string> top_args;
+  for (int i = 1; i < argc; ++i) {
+    top_args.push_back(argv[i]);
+  }
+
+  if (!top_args.empty() && top_args[0] == "license") {
+    std::vector<std::string> license_args(top_args.begin() + 1,
+                                          top_args.end());
+    return ravbot::licensing::HandleLicenseCommand(license_args, logger);
+  }
+
+  bool license_exempt = !top_args.empty() &&
+                        (top_args[0] == "--help" || top_args[0] == "-h" ||
+                         top_args[0] == "--version" || top_args[0] == "-v");
+  if (!license_exempt && !ravbot::licensing::EnsureAuthorized(logger)) {
+    return 1;
+  }
+
   // Create shared command handlers
-  auto gateway_cmds = std::make_shared<quantclaw::cli::GatewayCommands>(logger);
-  auto agent_cmds = std::make_shared<quantclaw::cli::AgentCommands>(logger);
-  auto session_cmds = std::make_shared<quantclaw::cli::SessionCommands>(logger);
-  auto onboard_cmds = std::make_shared<quantclaw::cli::OnboardCommands>(logger);
+  auto gateway_cmds = std::make_shared<ravbot::cli::GatewayCommands>(logger);
+  auto agent_cmds = std::make_shared<ravbot::cli::AgentCommands>(logger);
+  auto session_cmds = std::make_shared<ravbot::cli::SessionCommands>(logger);
+  auto onboard_cmds = std::make_shared<ravbot::cli::OnboardCommands>(logger);
 
   // Propagate to class-based command handlers
   gateway_cmds->SetGatewayUrl(gateway_url);
@@ -192,7 +211,18 @@ int main(int argc, char* argv[]) {
   session_cmds->SetAuthToken(auth_token);
 
   // Build CLI
-  quantclaw::cli::CLIManager cli;
+  ravbot::cli::CLIManager cli;
+
+  cli.AddCommand({"license",
+                  "Manage RavBot hardware binding and activation",
+                  {},
+                  [logger](int argc, char** argv) -> int {
+                    std::vector<std::string> args;
+                    for (int i = 1; i < argc; ++i)
+                      args.push_back(argv[i]);
+                    return ravbot::licensing::HandleLicenseCommand(args,
+                                                                    logger);
+                  }});
 
   // --- onboard command ---
   cli.AddCommand({"onboard",
@@ -348,7 +378,7 @@ int main(int argc, char* argv[]) {
          }
 
          try {
-           auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+           auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                gateway_url, auth_token, logger);
            if (!client->Connect(timeout_ms)) {
              if (json_output) {
@@ -390,7 +420,7 @@ int main(int argc, char* argv[]) {
            args.push_back(argv[i]);
 
          if (args.empty()) {
-           std::cerr << "Usage: quantclaw config "
+           std::cerr << "Usage: ravbot config "
                         "<get|set|unset|reload|validate|schema> [path] [value]"
                      << std::endl;
            return 1;
@@ -400,7 +430,7 @@ int main(int argc, char* argv[]) {
 
          if (sub == "reload") {
            try {
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (!client->Connect(3000)) {
                std::cerr << "Error: Gateway not running" << std::endl;
@@ -425,12 +455,12 @@ int main(int argc, char* argv[]) {
            }
 
            try {
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (!client->Connect(3000)) {
                // Fallback: read config file directly
-               auto config = quantclaw::QuantClawConfig::LoadFromFile(
-                   quantclaw::QuantClawConfig::DefaultConfigPath());
+               auto config = ravbot::RavBotConfig::LoadFromFile(
+                   ravbot::RavBotConfig::DefaultConfigPath());
                if (path == "gateway.port") {
                  std::cout << config.gateway.port << std::endl;
                } else if (path == "agent.model") {
@@ -466,7 +496,7 @@ int main(int argc, char* argv[]) {
 
          if (sub == "set") {
            if (args.size() < 3) {
-             std::cerr << "Usage: quantclaw config set <path> <value>"
+             std::cerr << "Usage: ravbot config set <path> <value>"
                        << std::endl;
              return 1;
            }
@@ -482,12 +512,12 @@ int main(int argc, char* argv[]) {
            }
 
            try {
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
-             quantclaw::QuantClawConfig::SetValue(config_file, path, value);
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
+             ravbot::RavBotConfig::SetValue(config_file, path, value);
              std::cout << path << " = " << value.dump() << std::endl;
 
              // Notify running gateway to reload
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (client->Connect(1000)) {
                client->Call("config.reload", {});
@@ -502,18 +532,18 @@ int main(int argc, char* argv[]) {
 
          if (sub == "unset") {
            if (args.size() < 2) {
-             std::cerr << "Usage: quantclaw config unset <path>" << std::endl;
+             std::cerr << "Usage: ravbot config unset <path>" << std::endl;
              return 1;
            }
            std::string path = args[1];
 
            try {
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
-             quantclaw::QuantClawConfig::UnsetValue(config_file, path);
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
+             ravbot::RavBotConfig::UnsetValue(config_file, path);
              std::cout << "Removed: " << path << std::endl;
 
              // Notify running gateway to reload
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (client->Connect(1000)) {
                client->Call("config.reload", {});
@@ -528,9 +558,9 @@ int main(int argc, char* argv[]) {
 
          if (sub == "validate") {
            try {
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
              auto config =
-                 quantclaw::QuantClawConfig::LoadFromFile(config_file);
+                 ravbot::RavBotConfig::LoadFromFile(config_file);
              std::cout << "Configuration is valid" << std::endl;
              return 0;
            } catch (const std::exception& e) {
@@ -574,20 +604,20 @@ int main(int argc, char* argv[]) {
          if (sub == "list") {
            // Multi-directory skill loading
            auto workspace_path =
-               std::filesystem::path(quantclaw::platform::home_directory()) /
-               ".quantclaw/agents/main/workspace";
+               std::filesystem::path(ravbot::platform::home_directory()) /
+               ".ravbot/agents/main/workspace";
 
            // Load config for skills settings
-           quantclaw::SkillsConfig skills_config;
+           ravbot::SkillsConfig skills_config;
            try {
-             auto config = quantclaw::QuantClawConfig::LoadFromFile(
-                 quantclaw::QuantClawConfig::DefaultConfigPath());
+             auto config = ravbot::RavBotConfig::LoadFromFile(
+                 ravbot::RavBotConfig::DefaultConfigPath());
              skills_config = config.skills;
            } catch (const std::exception&) {
              // Use defaults if no config
            }
 
-           auto skill_loader = std::make_shared<quantclaw::SkillLoader>(logger);
+           auto skill_loader = std::make_shared<ravbot::SkillLoader>(logger);
            auto skills =
                skill_loader->LoadSkills(skills_config, workspace_path);
 
@@ -611,28 +641,28 @@ int main(int argc, char* argv[]) {
 
          if (sub == "install") {
            if (args.size() < 2) {
-             std::cerr << "Usage: quantclaw skills install <name>" << std::endl;
+             std::cerr << "Usage: ravbot skills install <name>" << std::endl;
              return 1;
            }
            const std::string& skill_name = args[1];
 
            auto workspace_path =
-               std::filesystem::path(quantclaw::platform::home_directory()) /
-               ".quantclaw/agents/main/workspace";
+               std::filesystem::path(ravbot::platform::home_directory()) /
+               ".ravbot/agents/main/workspace";
 
-           quantclaw::SkillsConfig skills_config;
+           ravbot::SkillsConfig skills_config;
            try {
-             auto config = quantclaw::QuantClawConfig::LoadFromFile(
-                 quantclaw::QuantClawConfig::DefaultConfigPath());
+             auto config = ravbot::RavBotConfig::LoadFromFile(
+                 ravbot::RavBotConfig::DefaultConfigPath());
              skills_config = config.skills;
            } catch (const std::exception&) {}
 
-           auto skill_loader = std::make_shared<quantclaw::SkillLoader>(logger);
+           auto skill_loader = std::make_shared<ravbot::SkillLoader>(logger);
            auto skills =
                skill_loader->LoadSkills(skills_config, workspace_path);
 
            auto it = std::find_if(skills.begin(), skills.end(),
-                                  [&](const quantclaw::SkillMetadata& s) {
+                                  [&](const ravbot::SkillMetadata& s) {
                                     return s.name == skill_name;
                                   });
            if (it == skills.end()) {
@@ -663,20 +693,20 @@ int main(int argc, char* argv[]) {
        "Health check (config, deps, connectivity)",
        {},
        [logger, gateway_url, auth_token](int /*argc*/, char** /*argv*/) -> int {
-         std::cout << "QuantClaw Doctor" << std::endl;
+         std::cout << "RavBot Doctor" << std::endl;
          std::cout << std::string(40, '=') << std::endl;
 
          // Check config file
          std::string config_path =
-             quantclaw::QuantClawConfig::DefaultConfigPath();
+             ravbot::RavBotConfig::DefaultConfigPath();
          bool config_ok = std::filesystem::exists(config_path);
          std::cout << "[" << (config_ok ? "OK" : "!!")
                    << "] Config file: " << config_path << std::endl;
 
          // Check workspace
          auto workspace =
-             std::filesystem::path(quantclaw::platform::home_directory()) /
-             ".quantclaw/agents/main/workspace";
+             std::filesystem::path(ravbot::platform::home_directory()) /
+             ".ravbot/agents/main/workspace";
          bool ws_ok = std::filesystem::exists(workspace);
          std::cout << "[" << (ws_ok ? "OK" : "!!")
                    << "] Workspace: " << workspace.string() << std::endl;
@@ -690,7 +720,7 @@ int main(int argc, char* argv[]) {
          // Check gateway connectivity
          bool gw_ok = false;
          try {
-           auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+           auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                gateway_url, auth_token, logger);
            gw_ok = client->Connect(2000);
            if (gw_ok)
@@ -715,11 +745,11 @@ int main(int argc, char* argv[]) {
            args.push_back(argv[i]);
 
          std::string cron_file =
-             quantclaw::platform::home_directory() + "/.quantclaw/cron.json";
+             ravbot::platform::home_directory() + "/.ravbot/cron.json";
 
          if (args.empty() || args[0] == "list") {
            try {
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (client->Connect(3000)) {
                auto result = client->Call("cron.list", {});
@@ -778,7 +808,7 @@ int main(int argc, char* argv[]) {
            if (name.empty())
              name = message.substr(0, 30);
            try {
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (client->Connect(3000)) {
                auto result =
@@ -801,7 +831,7 @@ int main(int argc, char* argv[]) {
 
          if (args[0] == "remove" && args.size() >= 2) {
            try {
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (client->Connect(3000)) {
                client->Call("cron.remove", {{"id", args[1]}});
@@ -814,7 +844,7 @@ int main(int argc, char* argv[]) {
            return 1;
          }
 
-         std::cerr << "Usage: quantclaw cron [list|add|remove]" << std::endl;
+         std::cerr << "Usage: ravbot cron [list|add|remove]" << std::endl;
          return 1;
        }});
 
@@ -829,7 +859,7 @@ int main(int argc, char* argv[]) {
            args.push_back(argv[i]);
 
          if (args.empty()) {
-           std::cerr << "Usage: quantclaw memory <search|status> [query]"
+           std::cerr << "Usage: ravbot memory <search|status> [query]"
                      << std::endl;
            return 1;
          }
@@ -843,7 +873,7 @@ int main(int argc, char* argv[]) {
            }
 
            try {
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (client->Connect(3000)) {
                auto result = client->Call("memory.search", {{"query", query}});
@@ -862,10 +892,10 @@ int main(int argc, char* argv[]) {
 
            // Fallback: offline search
            auto workspace =
-               std::filesystem::path(quantclaw::platform::home_directory()) /
-               ".quantclaw/agents/main/workspace";
+               std::filesystem::path(ravbot::platform::home_directory()) /
+               ".ravbot/agents/main/workspace";
 
-           quantclaw::MemorySearch search(logger);
+           ravbot::MemorySearch search(logger);
            search.IndexDirectory(workspace);
            auto results = search.Search(query);
            for (const auto& r : results) {
@@ -877,7 +907,7 @@ int main(int argc, char* argv[]) {
 
          if (args[0] == "status") {
            try {
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (client->Connect(3000)) {
                auto result = client->Call("memory.status", {});
@@ -908,14 +938,14 @@ int main(int argc, char* argv[]) {
 
                     int port = 18801;
                     try {
-                      auto config = quantclaw::QuantClawConfig::LoadFromFile(
-                          quantclaw::QuantClawConfig::DefaultConfigPath());
+                      auto config = ravbot::RavBotConfig::LoadFromFile(
+                          ravbot::RavBotConfig::DefaultConfigPath());
                       port = config.gateway.control_ui.port;
                     } catch (const std::exception&) {}
 
                     std::string url =
                         "http://127.0.0.1:" + std::to_string(port) +
-                        "/__quantclaw__/control/";
+                        "/__ravbot__/control/";
                     std::cout << "Dashboard: " << url << std::endl;
 
                     if (!no_open) {
@@ -947,8 +977,8 @@ int main(int argc, char* argv[]) {
            sub_args.assign(args.begin() + 1, args.end());
 
          auto make_client = [&logger, &gateway_url, &auth_token]()
-             -> std::shared_ptr<quantclaw::gateway::GatewayClient> {
-           auto c = std::make_shared<quantclaw::gateway::GatewayClient>(
+             -> std::shared_ptr<ravbot::gateway::GatewayClient> {
+           auto c = std::make_shared<ravbot::gateway::GatewayClient>(
                gateway_url, auth_token, logger);
            if (!c->Connect(3000)) {
              std::cerr << "Error: Gateway not running" << std::endl;
@@ -1015,7 +1045,7 @@ int main(int argc, char* argv[]) {
          if (sub == "add") {
            if (sub_args.size() < 2) {
              std::cerr
-                 << "Usage: quantclaw channels add <type> <token> [--id <name>]"
+                 << "Usage: ravbot channels add <type> <token> [--id <name>]"
                  << std::endl;
              return 1;
            }
@@ -1029,11 +1059,11 @@ int main(int argc, char* argv[]) {
            }
            try {
              // Write to config file
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
              nlohmann::json channel_json;
              channel_json["enabled"] = true;
              channel_json["token"] = token;
-             quantclaw::QuantClawConfig::SetValue(config_file, "channels." + id,
+             ravbot::RavBotConfig::SetValue(config_file, "channels." + id,
                                                   channel_json);
              std::cout << "Added channel: " << id << " (" << type << ")"
                        << std::endl;
@@ -1053,12 +1083,12 @@ int main(int argc, char* argv[]) {
 
          if (sub == "remove") {
            if (sub_args.empty()) {
-             std::cerr << "Usage: quantclaw channels remove <id>" << std::endl;
+             std::cerr << "Usage: ravbot channels remove <id>" << std::endl;
              return 1;
            }
            try {
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
-             quantclaw::QuantClawConfig::UnsetValue(config_file,
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
+             ravbot::RavBotConfig::UnsetValue(config_file,
                                                     "channels." + sub_args[0]);
              std::cout << "Removed channel: " << sub_args[0] << std::endl;
 
@@ -1076,12 +1106,12 @@ int main(int argc, char* argv[]) {
 
          if (sub == "login") {
            if (sub_args.empty()) {
-             std::cerr << "Usage: quantclaw channels login <id>" << std::endl;
+             std::cerr << "Usage: ravbot channels login <id>" << std::endl;
              return 1;
            }
            try {
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
-             quantclaw::QuantClawConfig::SetValue(
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
+             ravbot::RavBotConfig::SetValue(
                  config_file, "channels." + sub_args[0] + ".enabled", true);
              std::cout << "Enabled channel: " << sub_args[0] << std::endl;
 
@@ -1099,12 +1129,12 @@ int main(int argc, char* argv[]) {
 
          if (sub == "logout") {
            if (sub_args.empty()) {
-             std::cerr << "Usage: quantclaw channels logout <id>" << std::endl;
+             std::cerr << "Usage: ravbot channels logout <id>" << std::endl;
              return 1;
            }
            try {
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
-             quantclaw::QuantClawConfig::SetValue(
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
+             ravbot::RavBotConfig::SetValue(
                  config_file, "channels." + sub_args[0] + ".enabled", false);
              std::cout << "Disabled channel: " << sub_args[0] << std::endl;
 
@@ -1148,12 +1178,12 @@ int main(int argc, char* argv[]) {
                json_output = true;
            }
            try {
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (!client->Connect(3000)) {
                // Fallback: show configured model from config file
-               auto config = quantclaw::QuantClawConfig::LoadFromFile(
-                   quantclaw::QuantClawConfig::DefaultConfigPath());
+               auto config = ravbot::RavBotConfig::LoadFromFile(
+                   ravbot::RavBotConfig::DefaultConfigPath());
                std::cout << "Current model: " << config.agent.model
                          << std::endl;
                std::cout << "(Gateway not running, showing config only)"
@@ -1241,18 +1271,18 @@ int main(int argc, char* argv[]) {
 
          if (sub == "set") {
            if (sub_args.empty()) {
-             std::cerr << "Usage: quantclaw models set <model>" << std::endl;
+             std::cerr << "Usage: ravbot models set <model>" << std::endl;
              return 1;
            }
            std::string model = sub_args[0];
            try {
              // Write to config file
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
-             quantclaw::QuantClawConfig::SetValue(config_file, "agent.model",
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
+             ravbot::RavBotConfig::SetValue(config_file, "agent.model",
                                                   model);
 
              // Also update running gateway via RPC
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (client->Connect(3000)) {
                client->Call("models.set", {{"model", model}});
@@ -1268,7 +1298,7 @@ int main(int argc, char* argv[]) {
 
          if (sub == "aliases") {
            try {
-             auto client = std::make_shared<quantclaw::gateway::GatewayClient>(
+             auto client = std::make_shared<ravbot::gateway::GatewayClient>(
                  gateway_url, auth_token, logger);
              if (!client->Connect(3000)) {
                std::cerr << "Gateway not running" << std::endl;
@@ -1292,16 +1322,16 @@ int main(int argc, char* argv[]) {
          }
 
          if (sub == "auth") {
-           quantclaw::cli::ModelAuthCommandContext ctx;
+           ravbot::cli::ModelAuthCommandContext ctx;
            ctx.logger = logger;
            ctx.openai_codex_client =
-               std::make_shared<quantclaw::auth::OpenAICodexOAuthClient>(
+               std::make_shared<ravbot::auth::OpenAICodexOAuthClient>(
                    logger);
-           ctx.openai_codex_store = quantclaw::auth::OpenAICodexAuthStore();
+           ctx.openai_codex_store = ravbot::auth::OpenAICodexAuthStore();
            ctx.github_copilot_client =
-               std::make_shared<quantclaw::auth::GitHubCopilotLoginClient>(
+               std::make_shared<ravbot::auth::GitHubCopilotLoginClient>(
                    logger);
-           ctx.github_copilot_store = quantclaw::auth::GitHubCopilotAuthStore();
+           ctx.github_copilot_store = ravbot::auth::GitHubCopilotAuthStore();
            ctx.in = &std::cin;
            ctx.out = &std::cout;
            ctx.err = &std::cerr;
@@ -1310,7 +1340,7 @@ int main(int argc, char* argv[]) {
 #else
            ctx.stdin_is_tty = isatty(fileno(stdin)) != 0;
 #endif
-           return quantclaw::cli::HandleModelsAuthCommand(sub_args, ctx);
+           return ravbot::cli::HandleModelsAuthCommand(sub_args, ctx);
          }
 
          std::cerr << "Unknown models subcommand: " << sub << std::endl;
@@ -1321,8 +1351,8 @@ int main(int argc, char* argv[]) {
   // --- logs command ---
   cli.AddCommand(
       {"logs", "View gateway logs", {}, [](int argc, char** argv) -> int {
-         auto home_dir = quantclaw::platform::home_directory();
-         auto log_dir = std::filesystem::path(home_dir) / ".quantclaw" / "logs";
+         auto home_dir = ravbot::platform::home_directory();
+         auto log_dir = std::filesystem::path(home_dir) / ".ravbot" / "logs";
 
          int lines = 50;
          bool follow = false;
@@ -1332,7 +1362,7 @@ int main(int argc, char* argv[]) {
              follow = true;
            }
            if (arg == "-n" && i + 1 < argc) {
-             if (auto parsed = quantclaw::ParsePositiveInt(argv[++i])) {
+             if (auto parsed = ravbot::ParsePositiveInt(argv[++i])) {
                lines = *parsed;
              } else {
                std::cerr << "Invalid value for -n: " << argv[i] << std::endl;
@@ -1346,13 +1376,13 @@ int main(int argc, char* argv[]) {
 #ifdef _WIN32
            std::cerr << "No log file found at: " << log_file.string()
                      << std::endl;
-           std::cerr << "Start the gateway first: quantclaw gateway run"
+           std::cerr << "Start the gateway first: ravbot gateway run"
                      << std::endl;
            return 1;
 #else
            // Try journalctl on Linux
            std::string cmd =
-               "journalctl --user -u quantclaw -n " +
+               "journalctl --user -u ravbot -n " +
                std::to_string(lines);
            if (follow) {
              cmd += " -f";
@@ -1427,8 +1457,8 @@ int main(int argc, char* argv[]) {
            sub_args.assign(args.begin() + 1, args.end());
 
          auto make_client = [&logger, &gateway_url, &auth_token]()
-             -> std::shared_ptr<quantclaw::gateway::GatewayClient> {
-           auto c = std::make_shared<quantclaw::gateway::GatewayClient>(
+             -> std::shared_ptr<ravbot::gateway::GatewayClient> {
+           auto c = std::make_shared<ravbot::gateway::GatewayClient>(
                gateway_url, auth_token, logger);
            if (!c->Connect(3000)) {
              std::cerr << "Error: Gateway not running" << std::endl;
@@ -1551,7 +1581,7 @@ int main(int argc, char* argv[]) {
 
          if (sub == "enable" || sub == "disable") {
            if (sub_args.empty()) {
-             std::cerr << "Usage: quantclaw plugins " << sub << " <id>"
+             std::cerr << "Usage: ravbot plugins " << sub << " <id>"
                        << std::endl;
              return 1;
            }
@@ -1562,8 +1592,8 @@ int main(int argc, char* argv[]) {
            }
            bool enable = (sub == "enable");
            try {
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
-             quantclaw::QuantClawConfig::SetValue(
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
+             ravbot::RavBotConfig::SetValue(
                  config_file, "plugins.entries." + plugin_id + ".enabled",
                  enable);
              std::cout << (enable ? "Enabled" : "Disabled")
@@ -1583,7 +1613,7 @@ int main(int argc, char* argv[]) {
          if (sub == "install") {
            if (sub_args.empty()) {
              std::cerr
-                 << "Usage: quantclaw plugins install <path> [--id <name>]"
+                 << "Usage: ravbot plugins install <path> [--id <name>]"
                  << std::endl;
              return 1;
            }
@@ -1609,11 +1639,11 @@ int main(int argc, char* argv[]) {
            }
 
            try {
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
              nlohmann::json install_entry;
              install_entry["installPath"] =
                  std::filesystem::canonical(plugin_path).string();
-             quantclaw::QuantClawConfig::SetValue(
+             ravbot::RavBotConfig::SetValue(
                  config_file, "plugins.installs." + plugin_id, install_entry);
              std::cout << "Installed plugin: " << plugin_id << " from "
                        << plugin_path << std::endl;
@@ -1631,7 +1661,7 @@ int main(int argc, char* argv[]) {
 
          if (sub == "remove") {
            if (sub_args.empty()) {
-             std::cerr << "Usage: quantclaw plugins remove <id>" << std::endl;
+             std::cerr << "Usage: ravbot plugins remove <id>" << std::endl;
              return 1;
            }
            std::string plugin_id = sub_args[0];
@@ -1640,17 +1670,17 @@ int main(int argc, char* argv[]) {
              return 1;
            }
            try {
-             auto config_file = quantclaw::QuantClawConfig::DefaultConfigPath();
+             auto config_file = ravbot::RavBotConfig::DefaultConfigPath();
              // Remove from installs and entries (ignore if key absent)
              try {
-               quantclaw::QuantClawConfig::UnsetValue(
+               ravbot::RavBotConfig::UnsetValue(
                    config_file, "plugins.installs." + plugin_id);
              } catch (const std::exception& ue) {
                logger->debug("plugins.installs.{} not found: {}", plugin_id,
                              ue.what());
              }
              try {
-               quantclaw::QuantClawConfig::UnsetValue(
+               ravbot::RavBotConfig::UnsetValue(
                    config_file, "plugins.entries." + plugin_id);
              } catch (const std::exception& ue) {
                logger->debug("plugins.entries.{} not found: {}", plugin_id,
@@ -1678,7 +1708,7 @@ int main(int argc, char* argv[]) {
 
   // --- run command ---
   // One-shot: send a message to the agent and print the response.
-  // Equivalent to `quantclaw agent -m "<message>"` but with a simpler
+  // Equivalent to `ravbot agent -m "<message>"` but with a simpler
   // interface.
   cli.AddCommand({"run",
                   "Send a one-shot message to the agent and print the response",
@@ -1706,7 +1736,7 @@ int main(int argc, char* argv[]) {
 
                     if (message.empty()) {
                       std::cerr
-                          << "Usage: quantclaw run <message> [-s <session>]"
+                          << "Usage: ravbot run <message> [-s <session>]"
                           << std::endl;
                       return 1;
                     }
@@ -1735,7 +1765,7 @@ int main(int argc, char* argv[]) {
            prompt += argv[i];
          }
          if (prompt.empty()) {
-           std::cerr << "Usage: quantclaw eval <prompt>" << std::endl;
+           std::cerr << "Usage: ravbot eval <prompt>" << std::endl;
            return 1;
          }
          // Use --no-session flag so no history is persisted

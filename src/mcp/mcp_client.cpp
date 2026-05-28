@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/mcp/mcp_client.hpp"
+#include "ravbot/mcp/mcp_client.hpp"
 
 #include <sstream>
 
@@ -9,7 +9,7 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
-namespace quantclaw::mcp {
+namespace ravbot::mcp {
 
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb,
                             std::string* userp) {
@@ -121,4 +121,4 @@ nlohmann::json MCPClient::make_request(const nlohmann::json& request) {
   return nlohmann::json::parse(read_buffer);
 }
 
-}  // namespace quantclaw::mcp
+}  // namespace ravbot::mcp

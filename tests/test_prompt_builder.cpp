@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <filesystem>
@@ -8,10 +8,10 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/core/memory_manager.hpp"
-#include "quantclaw/core/prompt_builder.hpp"
-#include "quantclaw/core/skill_loader.hpp"
-#include "quantclaw/tools/tool_registry.hpp"
+#include "ravbot/core/memory_manager.hpp"
+#include "ravbot/core/prompt_builder.hpp"
+#include "ravbot/core/skill_loader.hpp"
+#include "ravbot/tools/tool_registry.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
@@ -19,19 +19,19 @@
 class PromptBuilderTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_prompt_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_prompt_test");
     std::filesystem::create_directories(test_dir_ / "skills");
 
     auto null_sink = std::make_shared<spdlog::sinks::null_sink_mt>();
     logger_ = std::make_shared<spdlog::logger>("test_prompt", null_sink);
 
     memory_manager_ =
-        std::make_shared<quantclaw::MemoryManager>(test_dir_, logger_);
-    skill_loader_ = std::make_shared<quantclaw::SkillLoader>(logger_);
-    tool_registry_ = std::make_shared<quantclaw::ToolRegistry>(logger_);
+        std::make_shared<ravbot::MemoryManager>(test_dir_, logger_);
+    skill_loader_ = std::make_shared<ravbot::SkillLoader>(logger_);
+    tool_registry_ = std::make_shared<ravbot::ToolRegistry>(logger_);
     tool_registry_->RegisterBuiltinTools();
 
-    builder_ = std::make_unique<quantclaw::PromptBuilder>(
+    builder_ = std::make_unique<ravbot::PromptBuilder>(
         memory_manager_, skill_loader_, tool_registry_);
   }
 
@@ -50,17 +50,17 @@ class PromptBuilderTest : public ::testing::Test {
 
   std::filesystem::path test_dir_;
   std::shared_ptr<spdlog::logger> logger_;
-  std::shared_ptr<quantclaw::MemoryManager> memory_manager_;
-  std::shared_ptr<quantclaw::SkillLoader> skill_loader_;
-  std::shared_ptr<quantclaw::ToolRegistry> tool_registry_;
-  std::unique_ptr<quantclaw::PromptBuilder> builder_;
+  std::shared_ptr<ravbot::MemoryManager> memory_manager_;
+  std::shared_ptr<ravbot::SkillLoader> skill_loader_;
+  std::shared_ptr<ravbot::ToolRegistry> tool_registry_;
+  std::unique_ptr<ravbot::PromptBuilder> builder_;
 };
 
 // --- BuildFull tests ---
 
 TEST_F(PromptBuilderTest, BuildFullContainsDefaultIdentity) {
   auto prompt = builder_->BuildFull();
-  EXPECT_NE(prompt.find("You are QuantClaw"), std::string::npos);
+  EXPECT_NE(prompt.find("You are RavBot"), std::string::npos);
   EXPECT_NE(prompt.find("personal AI assistant"), std::string::npos);
 }
 
@@ -125,7 +125,7 @@ TEST_F(PromptBuilderTest, BuildFullOmitsMissingSections) {
 
 TEST_F(PromptBuilderTest, BuildMinimalContainsIdentityFallback) {
   auto prompt = builder_->BuildMinimal();
-  EXPECT_NE(prompt.find("You are QuantClaw"), std::string::npos);
+  EXPECT_NE(prompt.find("You are RavBot"), std::string::npos);
   EXPECT_NE(prompt.find("helpful AI assistant"), std::string::npos);
 }
 
@@ -186,12 +186,12 @@ TEST_F(PromptBuilderTest, BuildFullWithAllSections) {
 
 TEST_F(PromptBuilderTest, BuildFullNoToolsRegistered) {
   // Create a fresh registry without built-in tools
-  auto empty_registry = std::make_shared<quantclaw::ToolRegistry>(logger_);
+  auto empty_registry = std::make_shared<ravbot::ToolRegistry>(logger_);
   auto builder =
-      quantclaw::PromptBuilder(memory_manager_, skill_loader_, empty_registry);
+      ravbot::PromptBuilder(memory_manager_, skill_loader_, empty_registry);
 
   auto prompt = builder.BuildFull();
   EXPECT_EQ(prompt.find("## Available Tools"), std::string::npos);
   // Default identity should still be there
-  EXPECT_NE(prompt.find("You are QuantClaw"), std::string::npos);
+  EXPECT_NE(prompt.find("You are RavBot"), std::string::npos);
 }

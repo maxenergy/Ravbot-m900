@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/quantclaw-logo-white-0307.png" alt="QuantClaw" width="180" />
+  <img src="assets/ravbot-logo-white-0307.png" alt="RavBot" width="180" />
 </p>
 
-<h1 align="center">QuantClaw</h1>
+<h1 align="center">RavBot</h1>
 
 <p align="center">
   <strong>High-performance personal AI assistant in C++17</strong>
@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></a>
-  <a href="https://github.com/QuantClaw/QuantClaw/actions/workflows/github-actions.yml"><img src="https://github.com/QuantClaw/QuantClaw/actions/workflows/github-actions.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/RavBot/RavBot/actions/workflows/github-actions.yml"><img src="https://github.com/RavBot/RavBot/actions/workflows/github-actions.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/C%2B%2B-17-00599C.svg?logo=cplusplus&logoColor=white" alt="C++17">
   <img src="https://img.shields.io/badge/tests-1009%20passing-brightgreen.svg" alt="1009 tests passing">
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg" alt="Linux | macOS | Windows">
@@ -23,7 +23,7 @@
 
 ---
 
-QuantClaw is a native C++ implementation of the [OpenClaw](https://github.com/openclaw/openclaw) ecosystem — built for performance and low memory footprint while staying fully compatible with OpenClaw workspace files, skills, and the WebSocket RPC protocol.
+RavBot is a native C++ implementation of the [OpenClaw](https://github.com/openclaw/openclaw) ecosystem — built for performance and low memory footprint while staying fully compatible with OpenClaw workspace files, skills, and the WebSocket RPC protocol.
 
 ## Features
 
@@ -37,35 +37,35 @@ QuantClaw is a native C++ implementation of the [OpenClaw](https://github.com/op
 - **Context Management**: Auto-compaction, tool result pruning, and BM25 memory search
 - **Channel Adapters**: Connect Discord, Telegram, or custom bots to the gateway
 - **Session Persistence**: Full conversation history with tool call context preserved in JSONL
-- **Skill System**: Compatible with OpenClaw SKILL.md format (both OpenClaw and QuantClaw manifest formats)
+- **Skill System**: Compatible with OpenClaw SKILL.md format (both OpenClaw and RavBot manifest formats)
 - **Plugin Ecosystem**: Full OpenClaw plugin compatibility via Node.js sidecar — tools, hooks, services, providers, commands, HTTP routes, and gateway methods
 - **MCP Support**: Model Context Protocol for external tool integration
 - **File System First**: No database dependencies — everything stored in your workspace
 
 ## 📖 Documentation
 
-Full documentation available at: **[https://quantclaw.github.io/](https://quantclaw.github.io/)**
+Full documentation available at: **[https://ravbot.github.io/](https://ravbot.github.io/)**
 
 Includes:
-- [Getting Started Guide](https://quantclaw.github.io/guide/getting-started)
-- [Installation Instructions](https://quantclaw.github.io/guide/installation)
-- [Architecture Overview](https://quantclaw.github.io/guide/architecture)
-- [Plugin Development Guide](https://quantclaw.github.io/guide/plugins)
-- [CLI Reference](https://quantclaw.github.io/guide/cli-reference)
+- [Getting Started Guide](https://ravbot.github.io/guide/getting-started)
+- [Installation Instructions](https://ravbot.github.io/guide/installation)
+- [Architecture Overview](https://ravbot.github.io/guide/architecture)
+- [Plugin Development Guide](https://ravbot.github.io/guide/plugins)
+- [CLI Reference](https://ravbot.github.io/guide/cli-reference)
 
 ## Quick Start
 
-### 1. Build QuantClaw
+### 1. Build RavBot
 
 ```bash
-git clone https://github.com/QuantClaw/QuantClaw.git
-cd QuantClaw
+git clone https://github.com/RavBot/RavBot.git
+cd RavBot
 mkdir build && cd build
 cmake ..
 cmake --build . --parallel
 
 # Run tests
-./quantclaw_tests
+./ravbot_tests
 
 # Install (optional)
 sudo cmake --install .
@@ -75,13 +75,13 @@ sudo cmake --install .
 
 ```bash
 # Interactive setup wizard (recommended)
-quantclaw onboard
+ravbot onboard
 
 # Or with automatic background service installation
-quantclaw onboard --install-daemon
+ravbot onboard --install-daemon
 
 # Or quick setup without prompts
-quantclaw onboard --quick
+ravbot onboard --quick
 ```
 
 The onboarding wizard guides you through:
@@ -95,10 +95,10 @@ The onboarding wizard guides you through:
 
 ```bash
 # If installed as service
-quantclaw gateway start
+ravbot gateway start
 
 # Or run in foreground
-quantclaw gateway
+ravbot gateway
 ```
 
 ### 4. Open Dashboard
@@ -108,7 +108,7 @@ quantclaw gateway
 ./scripts/build_ui.sh
 
 # Open Dashboard
-quantclaw dashboard
+ravbot dashboard
 ```
 
 This opens the web UI at `http://127.0.0.1:18801`
@@ -130,7 +130,7 @@ The dashboard requires a token to access. The token is defined in your configura
 
 **First-time access:**
 1. Open `http://127.0.0.1:18801` in your browser
-2. Enter the token you configured in `~/.quantclaw/quantclaw.json`
+2. Enter the token you configured in `~/.ravbot/ravbot.json`
 3. The token is stored in your browser's localStorage for future visits
 
 **To disable authentication** (not recommended for production):
@@ -145,13 +145,13 @@ The dashboard requires a token to access. The token is defined in your configura
 ```
 
 **To change your token:**
-1. Edit `~/.quantclaw/quantclaw.json` and update `gateway.auth.token`
-2. Run `quantclaw config reload` (or restart the gateway)
+1. Edit `~/.ravbot/ravbot.json` and update `gateway.auth.token`
+2. Run `ravbot config reload` (or restart the gateway)
 3. Clear your browser's localStorage for `127.0.0.1:18801` and enter the new token
 
 ## Port Configuration
 
-QuantClaw uses dedicated ports to avoid conflicts with OpenClaw and other services:
+RavBot uses dedicated ports to avoid conflicts with OpenClaw and other services:
 
 | Service | Port | Purpose |
 |---------|------|---------|
@@ -159,9 +159,9 @@ QuantClaw uses dedicated ports to avoid conflicts with OpenClaw and other servic
 | HTTP REST API / Dashboard | `18801` | Control UI and REST API endpoints |
 | Sidecar IPC (TCP loopback) | `18802-18899` | Node.js Sidecar process communication |
 
-**Note**: QuantClaw uses ports `18800-18801` (different from OpenClaw's `18789-18790`), allowing both to run simultaneously.
+**Note**: RavBot uses ports `18800-18801` (different from OpenClaw's `18789-18790`), allowing both to run simultaneously.
 
-To use custom ports, edit `~/.quantclaw/quantclaw.json`:
+To use custom ports, edit `~/.ravbot/ravbot.json`:
 
 ```json
 {
@@ -177,8 +177,8 @@ To use custom ports, edit `~/.quantclaw/quantclaw.json`:
 ## Architecture
 
 ```
-~/.quantclaw/
-├── quantclaw.json              # Configuration (OpenClaw format)
+~/.ravbot/
+├── ravbot.json              # Configuration (OpenClaw format)
 ├── skills/                     # Installed skills (OpenClaw compatible)
 │   └── weather/
 │       └── SKILL.md
@@ -199,7 +199,7 @@ To use custom ports, edit `~/.quantclaw/quantclaw.json`:
 
 ## Configuration
 
-QuantClaw uses JSON configuration (`~/.quantclaw/quantclaw.json`):
+RavBot uses JSON configuration (`~/.ravbot/ravbot.json`):
 
 ```json
 {
@@ -241,7 +241,7 @@ QuantClaw uses JSON configuration (`~/.quantclaw/quantclaw.json`):
   "security": {
     "sandbox": {
       "enabled": true,
-      "allowedPaths": ["~/.quantclaw/agents/main/workspace"],
+      "allowedPaths": ["~/.ravbot/agents/main/workspace"],
       "deniedPaths": ["/etc", "/sys", "/proc"]
     }
   },
@@ -255,15 +255,15 @@ The model field uses `provider/model-name` prefix routing. If no prefix is given
 
 ### OpenAI Codex OAuth Login
 
-QuantClaw also supports browser-based OpenAI account login through a separate `openai-codex` provider, so you can use ChatGPT/Codex-backed models without setting `OPENAI_API_KEY`:
+RavBot also supports browser-based OpenAI account login through a separate `openai-codex` provider, so you can use ChatGPT/Codex-backed models without setting `OPENAI_API_KEY`:
 
 ```bash
-quantclaw models auth login --provider openai-codex
-quantclaw models auth status --provider openai-codex
-quantclaw models auth logout --provider openai-codex
+ravbot models auth login --provider openai-codex
+ravbot models auth status --provider openai-codex
+ravbot models auth logout --provider openai-codex
 ```
 
-OAuth credentials are stored in `~/.quantclaw/auth/openai-codex.json` and are refreshed automatically when possible. `status` reports whether cached credentials exist and whether the access token is still valid or refreshable. `logout` clears only the local cached credentials, it does not switch your configured model away from `openai-codex/...`. Auth-store updates use atomic replacement, so a failed write does not wipe an existing cached login. To use the OAuth-backed provider, point your model at `openai-codex/...`, for example:
+OAuth credentials are stored in `~/.ravbot/auth/openai-codex.json` and are refreshed automatically when possible. `status` reports whether cached credentials exist and whether the access token is still valid or refreshable. `logout` clears only the local cached credentials, it does not switch your configured model away from `openai-codex/...`. Auth-store updates use atomic replacement, so a failed write does not wipe an existing cached login. To use the OAuth-backed provider, point your model at `openai-codex/...`, for example:
 
 ```json
 {
@@ -283,18 +283,18 @@ If you prefer the standard OpenAI API key flow, keep using the `openai` provider
 
 ### GitHub Copilot Login
 
-QuantClaw also supports GitHub Copilot through a dedicated `github-copilot` provider with GitHub device login:
+RavBot also supports GitHub Copilot through a dedicated `github-copilot` provider with GitHub device login:
 
 ```bash
-quantclaw models auth login --provider github-copilot
-quantclaw models auth status --provider github-copilot
-quantclaw models auth logout --provider github-copilot
+ravbot models auth login --provider github-copilot
+ravbot models auth status --provider github-copilot
+ravbot models auth logout --provider github-copilot
 
 # Convenience alias
-quantclaw models auth login-github-copilot
+ravbot models auth login-github-copilot
 ```
 
-Long-lived GitHub credentials are stored in `~/.quantclaw/auth/github-copilot.json`, and short-lived Copilot API tokens are cached in `~/.quantclaw/auth/github-copilot.token-cache.json`. `status` reports whether cached credentials exist and whether the current access token is still valid or refreshable. `logout` clears only the local cached credentials, it does not switch your configured model away from `github-copilot/...`. Auth-store updates use atomic replacement, so a failed write does not wipe an existing cached login. At runtime, QuantClaw prefers `COPILOT_GITHUB_TOKEN`, then `GH_TOKEN`, then `GITHUB_TOKEN`, and only falls back to the local auth store if none of those are set.
+Long-lived GitHub credentials are stored in `~/.ravbot/auth/github-copilot.json`, and short-lived Copilot API tokens are cached in `~/.ravbot/auth/github-copilot.token-cache.json`. `status` reports whether cached credentials exist and whether the current access token is still valid or refreshable. `logout` clears only the local cached credentials, it does not switch your configured model away from `github-copilot/...`. Auth-store updates use atomic replacement, so a failed write does not wipe an existing cached login. At runtime, RavBot prefers `COPILOT_GITHUB_TOKEN`, then `GH_TOKEN`, then `GITHUB_TOKEN`, and only falls back to the local auth store if none of those are set.
 
 To use the provider, point your model at `github-copilot/...`, for example:
 
@@ -308,14 +308,14 @@ To use the provider, point your model at `github-copilot/...`, for example:
 
 ### Log Retention
 
-QuantClaw enforces automatic log cleanup on every gateway startup to prevent disk exhaustion.
+RavBot enforces automatic log cleanup on every gateway startup to prevent disk exhaustion.
 
 | Option | Key | Default | Description |
 |--------|-----|---------|-------------|
 | Retention period | `system.logRetentionDays` | `7` | Delete `.log` files older than N days. Set to `0` to keep forever. |
 | Total size cap | `system.logMaxSizeMb` | `50` | Maximum total log storage in MiB, split across 5 rotating files (~10 MiB each). |
 
-Log files are stored at `~/.quantclaw/logs/`. The main application log (`quantclaw.log`) is size-rotated automatically by spdlog; the gateway service log (`gateway.log`, written via the platform service manager on Linux/macOS) is time-pruned at every startup.
+Log files are stored at `~/.ravbot/logs/`. The main application log (`ravbot.log`) is size-rotated automatically by spdlog; the gateway service log (`gateway.log`, written via the platform service manager on Linux/macOS) is time-pruned at every startup.
 
 ### Dependencies
 
@@ -346,18 +346,18 @@ The easiest way to get started is the interactive onboarding wizard:
 
 ```bash
 # Run the full wizard
-quantclaw onboard
+ravbot onboard
 
 # Install the background service automatically
-quantclaw onboard --install-daemon
+ravbot onboard --install-daemon
 
 # Quick setup (non-interactive)
-quantclaw onboard --quick
+ravbot onboard --quick
 ```
 
 The wizard creates:
-- Configuration file (`~/.quantclaw/quantclaw.json`)
-- Workspace directory (`~/.quantclaw/agents/main/workspace/`)
+- Configuration file (`~/.ravbot/ravbot.json`)
+- Workspace directory (`~/.ravbot/agents/main/workspace/`)
 - SOUL.md (agent identity file)
 - Optional per-user background service definition (`systemd --user` on Linux, `launchd` on macOS)
 
@@ -365,91 +365,91 @@ The wizard creates:
 
 ```bash
 # Run gateway in foreground
-quantclaw gateway
+ravbot gateway
 
 # Install the background service definition (systemd --user / launchd)
-quantclaw gateway install
+ravbot gateway install
 
 # Uninstall the service
-quantclaw gateway uninstall
+ravbot gateway uninstall
 
 # Start / stop / restart the background service
-quantclaw gateway start
-quantclaw gateway stop
-quantclaw gateway restart
+ravbot gateway start
+ravbot gateway stop
+ravbot gateway restart
 
 # Check status
-quantclaw gateway status
+ravbot gateway status
 
 # Call any RPC method directly
-quantclaw gateway call gateway.health
+ravbot gateway call gateway.health
 ```
 
 ### Agent interaction
 
 ```bash
 # Send a message
-quantclaw agent "Hello, introduce yourself"
+ravbot agent "Hello, introduce yourself"
 
 # With a custom session key
-quantclaw agent --session my:session "What's the weather?"
+ravbot agent --session my:session "What's the weather?"
 ```
 
 ### Session management
 
 ```bash
-quantclaw sessions list
-quantclaw sessions history <session-key>
-quantclaw sessions delete <session-key>
-quantclaw sessions reset <session-key>
+ravbot sessions list
+ravbot sessions history <session-key>
+ravbot sessions delete <session-key>
+ravbot sessions reset <session-key>
 ```
 
 ### Config management
 
 ```bash
-quantclaw config get                    # View full config
-quantclaw config get llm.model          # View a specific value (dot-path)
-quantclaw config set llm.model "anthropic/claude-sonnet-4-6"    # Change a value
-quantclaw config unset llm.temperature                          # Remove a key
-quantclaw config reload                 # Hot-reload config (no restart needed)
+ravbot config get                    # View full config
+ravbot config get llm.model          # View a specific value (dot-path)
+ravbot config set llm.model "anthropic/claude-sonnet-4-6"    # Change a value
+ravbot config unset llm.temperature                          # Remove a key
+ravbot config reload                 # Hot-reload config (no restart needed)
 ```
 
 ### Skills management
 
 ```bash
-quantclaw skills list              # List loaded skills
-quantclaw skills install <name>    # Install a skill's dependencies
+ravbot skills list              # List loaded skills
+ravbot skills install <name>    # Install a skill's dependencies
 ```
 
 ### Memory search
 
 ```bash
-quantclaw memory search "<query>"  # BM25 search across workspace memory files
-quantclaw memory status            # Show memory index stats
+ravbot memory search "<query>"  # BM25 search across workspace memory files
+ravbot memory status            # Show memory index stats
 ```
 
 ### Cron scheduler
 
 ```bash
-quantclaw cron list                            # List scheduled tasks
-quantclaw cron add <name> <schedule> <task>    # Add a cron task (cron expression)
-quantclaw cron remove <id>                     # Remove a task by ID
+ravbot cron list                            # List scheduled tasks
+ravbot cron add <name> <schedule> <task>    # Add a cron task (cron expression)
+ravbot cron remove <id>                     # Remove a task by ID
 ```
 
 ### Other commands
 
 ```bash
-quantclaw health          # Quick health check
-quantclaw logs            # Show last 50 lines of gateway logs
-quantclaw logs -n 100     # Show last 100 lines
-quantclaw logs -f         # Follow logs in real-time
-quantclaw logs -n 20 -f   # Follow, starting from last 20 lines
-quantclaw doctor          # Diagnostic check
-quantclaw dashboard       # Open web UI in browser
+ravbot health          # Quick health check
+ravbot logs            # Show last 50 lines of gateway logs
+ravbot logs -n 100     # Show last 100 lines
+ravbot logs -f         # Follow logs in real-time
+ravbot logs -n 20 -f   # Follow, starting from last 20 lines
+ravbot doctor          # Diagnostic check
+ravbot dashboard       # Open web UI in browser
 ```
 
 > **Note for Windows users:** log following (`-f`) is not currently supported on Windows and will print an error and exit.
-> As a workaround, use `quantclaw logs -n <count>` (for example, `quantclaw logs -n 100`) and re-run as needed.
+> As a workaround, use `ravbot logs -n <count>` (for example, `ravbot logs -n 100`) and re-run as needed.
 
 ### In-conversation message commands
 
@@ -480,7 +480,7 @@ Skills extend the agent's capabilities by injecting contextual instructions and 
 
 ### Creating Custom Skills
 
-Place a skill directory in `~/.quantclaw/skills/` (global) or in the workspace:
+Place a skill directory in `~/.ravbot/skills/` (global) or in the workspace:
 
 ```yaml
 # skills/my-skill/SKILL.md
@@ -508,7 +508,7 @@ Skills are compatible with the OpenClaw SKILL.md format.
 
 ## Channel Adapters
 
-QuantClaw supports external channel adapters that connect to the gateway as standard WebSocket RPC clients. Adapters are Node.js processes managed by `ChannelAdapterManager`.
+RavBot supports external channel adapters that connect to the gateway as standard WebSocket RPC clients. Adapters are Node.js processes managed by `ChannelAdapterManager`.
 
 **Built-in adapters** (in `src/adapters/`):
 
@@ -602,11 +602,11 @@ All Docker-related files live in the `scripts/` directory.
 
 | File | Purpose | Base | User |
 |------|---------|------|------|
-| `scripts/Dockerfile` | **Production** — minimal runtime image with C++ binary + Sidecar | Ubuntu 22.04 multi-stage | `quantclaw` (non-root) |
+| `scripts/Dockerfile` | **Production** — minimal runtime image with C++ binary + Sidecar | Ubuntu 22.04 multi-stage | `ravbot` (non-root) |
 | `scripts/Dockerfile.test` | **CI / Test** — runs C++ unit tests + Sidecar tests + E2E tests | Ubuntu 22.04 | root |
 | `scripts/Dockerfile.dev` | **Development** — full toolchain + source + `gdb`/`valgrind`, interactive shell | Ubuntu 22.04 | root |
 
-The production image uses a **three-stage build**: `cpp-builder` (compiles C++), `node-builder` (compiles TypeScript Sidecar), and `runtime` (copies only the final artifacts). It runs as a non-root user `quantclaw`.
+The production image uses a **three-stage build**: `cpp-builder` (compiles C++), `node-builder` (compiles TypeScript Sidecar), and `runtime` (copies only the final artifacts). It runs as a non-root user `ravbot`.
 
 ### DOCKER_VERSION
 
@@ -617,36 +617,36 @@ VERSION=$(cat scripts/DOCKER_VERSION)
 # → 0.3.0-alpha
 ```
 
-All three Compose services use this value via the `QUANTCLAW_VERSION` environment variable.
+All three Compose services use this value via the `RAVBOT_VERSION` environment variable.
 To set it explicitly before running Compose:
 
 ```bash
-export QUANTCLAW_VERSION=$(cat scripts/DOCKER_VERSION)
+export RAVBOT_VERSION=$(cat scripts/DOCKER_VERSION)
 ```
 
 ### Quick start with Docker Compose
 
 ```bash
 # Start the production gateway (detached)
-docker compose -f scripts/docker-compose.yml up -d quantclaw
+docker compose -f scripts/docker-compose.yml up -d ravbot
 
 # View logs
-docker compose -f scripts/docker-compose.yml logs -f quantclaw
+docker compose -f scripts/docker-compose.yml logs -f ravbot
 
 # Run the full test suite in a one-shot container
-docker compose -f scripts/docker-compose.yml run --rm quantclaw-test
+docker compose -f scripts/docker-compose.yml run --rm ravbot-test
 
 # Start the dev container with a live source mount
-docker compose -f scripts/docker-compose.yml run --rm quantclaw-dev
+docker compose -f scripts/docker-compose.yml run --rm ravbot-dev
 ```
 
 The compose file defines three services:
 
 | Service | Image | Description |
 |---------|-------|-------------|
-| `quantclaw` | `quantclaw:VERSION` | Production gateway, restarts automatically |
-| `quantclaw-test` | `quantclaw-test:VERSION` | One-shot test runner |
-| `quantclaw-dev` | `quantclaw-dev:VERSION` | Dev shell with source volume mount |
+| `ravbot` | `ravbot:VERSION` | Production gateway, restarts automatically |
+| `ravbot-test` | `ravbot-test:VERSION` | One-shot test runner |
+| `ravbot-dev` | `ravbot-dev:VERSION` | Dev shell with source volume mount |
 
 ### Build manually
 
@@ -659,29 +659,29 @@ docker build \
   --build-arg VERSION=$VERSION \
   --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
   --build-arg VCS_REF=$(git rev-parse --short HEAD) \
-  -t quantclaw:$VERSION \
-  -t quantclaw:latest \
+  -t ravbot:$VERSION \
+  -t ravbot:latest \
   .
 
 # Test image
-docker build -f scripts/Dockerfile.test -t quantclaw-test:$VERSION .
+docker build -f scripts/Dockerfile.test -t ravbot-test:$VERSION .
 
 # Dev image
-docker build -f scripts/Dockerfile.dev -t quantclaw-dev:$VERSION .
+docker build -f scripts/Dockerfile.dev -t ravbot-dev:$VERSION .
 ```
 
 ### Run the production image
 
 ```bash
 docker run -d \
-  --name quantclaw \
+  --name ravbot \
   -p 18800:18800 \
   -p 18801:18801 \
   -e OPENAI_API_KEY=sk-... \
   -e ANTHROPIC_API_KEY=sk-ant-... \
-  -e QUANTCLAW_LOG_LEVEL=info \
-  -v quantclaw_data:/home/quantclaw/.quantclaw \
-  quantclaw:latest
+  -e RAVBOT_LOG_LEVEL=info \
+  -v ravbot_data:/home/ravbot/.ravbot \
+  ravbot:latest
 ```
 
 ### Build args and environment variables
@@ -701,13 +701,13 @@ docker run -d \
 |----------|---------|-------------|
 | `OPENAI_API_KEY` | — | OpenAI / compatible provider API key |
 | `ANTHROPIC_API_KEY` | — | Anthropic API key |
-| `QUANTCLAW_LOG_LEVEL` | `info` | Log level: `debug` / `info` / `warn` / `error` |
+| `RAVBOT_LOG_LEVEL` | `info` | Log level: `debug` / `info` / `warn` / `error` |
 
 ### Volumes and ports
 
 | Volume / Mount | Description |
 |----------------|-------------|
-| `/home/quantclaw/.quantclaw` | Config, workspace, sessions, and logs — **always persist this** |
+| `/home/ravbot/.ravbot` | Config, workspace, sessions, and logs — **always persist this** |
 
 | Port | Protocol | Description |
 |------|----------|-------------|
@@ -722,7 +722,7 @@ All helper scripts are in `scripts/`. Run them from the **repository root**.
 |--------|-------------|
 | `scripts/build.sh` | Smart build wrapper: color output, `-c` clean, `--debug`, `--tests`, `--asan`/`--tsan`/`--ubsan` sanitizers, CPU auto-detect, and platform-aware dependency setup including Homebrew support on macOS. |
 | `scripts/release.sh` | Build release tarball + SHA256 checksum. Reads version from `scripts/DOCKER_VERSION` or accepts an explicit version argument. Output goes to `dist/`. |
-| `scripts/install.sh` | Native installer: `--user` installs to `~/.quantclaw/bin` (default on macOS), `--system` installs to `/usr/local/bin` (default on Linux), then runs onboarding and installs the background service definition. |
+| `scripts/install.sh` | Native installer: `--user` installs to `~/.ravbot/bin` (default on macOS), `--system` installs to `/usr/local/bin` (default on Linux), then runs onboarding and installs the background service definition. |
 | `scripts/format-code.sh` | Format all C++ sources with `clang-format-18`. Pass `--check` to run the exact dry-run check used by CI. |
 | `scripts/format-code-docker.sh` | Same as above but runs inside Docker with `clang-format-18` pinned, so local and CI results stay aligned. |
 | `scripts/build_ui.sh` | Build the web Dashboard UI assets. |
@@ -733,7 +733,7 @@ All helper scripts are in `scripts/`. Run them from the **repository root**.
 
 ```bash
 cd build
-./quantclaw_tests
+./ravbot_tests
 # or
 ctest --output-on-failure
 ```
@@ -752,13 +752,13 @@ With an API key, agent conversation tests are also run:
 OPENAI_API_KEY=sk-... bash tests/smoke_test.sh
 ```
 
-Tests cover: lifecycle (health/status/auth), config RPCs, session RPCs, plugin RPCs, skill/cron/memory/queue/channel status, 10 concurrent WebSocket connections, and graceful shutdown. Logs are saved to `/tmp/quantclaw-smoke-ci/gateway.log`.
+Tests cover: lifecycle (health/status/auth), config RPCs, session RPCs, plugin RPCs, skill/cron/memory/queue/channel status, 10 concurrent WebSocket connections, and graceful shutdown. Logs are saved to `/tmp/ravbot-smoke-ci/gateway.log`.
 
 ### Manual LLM Testing
 
 ```bash
 # Start gateway
-quantclaw gateway
+ravbot gateway
 
 # Non-streaming agent request
 curl -X POST http://localhost:18801/api/agent/request \
@@ -775,7 +775,7 @@ curl -X POST http://localhost:18801/v1/chat/completions \
 
 ## Plugin Ecosystem
 
-QuantClaw runs OpenClaw TypeScript plugins via a Node.js sidecar process. The C++ main process manages the sidecar lifecycle and communicates over **TCP loopback (127.0.0.1)** using JSON-RPC 2.0.
+RavBot runs OpenClaw TypeScript plugins via a Node.js sidecar process. The C++ main process manages the sidecar lifecycle and communicates over **TCP loopback (127.0.0.1)** using JSON-RPC 2.0.
 
 **Supported plugin capabilities**:
 - **Tools**: Plugin-defined tools callable by the agent
@@ -788,11 +788,11 @@ QuantClaw runs OpenClaw TypeScript plugins via a Node.js sidecar process. The C+
 
 **Plugin discovery** (in priority order):
 1. Config-specified paths (`plugins.load.paths`)
-2. Workspace plugins (`.openclaw/plugins/` or `.quantclaw/plugins/`)
-3. Global plugins (`~/.quantclaw/plugins/`)
-4. Bundled plugins (`~/.quantclaw/bundled-plugins/`)
+2. Workspace plugins (`.openclaw/plugins/` or `.ravbot/plugins/`)
+3. Global plugins (`~/.ravbot/plugins/`)
+4. Bundled plugins (`~/.ravbot/bundled-plugins/`)
 
-Plugins use `openclaw.plugin.json` or `quantclaw.plugin.json` manifests, compatible with the OpenClaw plugin format.
+Plugins use `openclaw.plugin.json` or `ravbot.plugin.json` manifests, compatible with the OpenClaw plugin format.
 
 ```json
 {
@@ -812,7 +812,7 @@ The IPC between the C++ host and the sidecar uses **TCP loopback**, which works 
 
 **Connection setup**:
 1. The C++ host binds to `127.0.0.1:0` — the OS assigns a free port.
-2. The assigned port is forwarded to the sidecar child process via the `QUANTCLAW_PORT` environment variable.
+2. The assigned port is forwarded to the sidecar child process via the `RAVBOT_PORT` environment variable.
 3. The sidecar connects with Node.js's built-in `net.createConnection(port, '127.0.0.1')` — no extra npm packages needed.
 
 **Frame format (NDJSON)**:
@@ -835,7 +835,7 @@ The `\n` byte (`0x0A`) therefore **only** appears as a frame delimiter between m
 
 ## OpenClaw Compatibility Status
 
-QuantClaw aims for full compatibility with [OpenClaw](https://github.com/openclaw/openclaw) (v2026.2). The table below summarizes current alignment:
+RavBot aims for full compatibility with [OpenClaw](https://github.com/openclaw/openclaw) (v2026.2). The table below summarizes current alignment:
 
 | Module | Status | Notes |
 |--------|--------|-------|
@@ -858,7 +858,7 @@ QuantClaw aims for full compatibility with [OpenClaw](https://github.com/opencla
 
 ### Key Differences from OpenClaw
 
-| Aspect | OpenClaw | QuantClaw |
+| Aspect | OpenClaw | RavBot |
 |--------|----------|-----------|
 | Default gateway port | `18789` (WebSocket + HTTP) | `18800` (WebSocket), `18801` (HTTP) |
 | Config format | JSON5 + `${VAR}` + `$include` | JSON5 + `${VAR}` (no `$include` yet) |
@@ -869,7 +869,7 @@ QuantClaw aims for full compatibility with [OpenClaw](https://github.com/opencla
 | Plugin execution | In-process (Node.js VM) | Out-of-process (TCP sidecar) |
 | Channel adapters | 38+ built-in (Discord, Slack, Teams, Telegram, Matrix, IRC, etc.) | External subprocess scripts (user-provided) |
 
-### QuantClaw-Only Features
+### RavBot-Only Features
 
 | Feature | Description |
 |---------|-------------|
@@ -900,25 +900,25 @@ Not yet implemented:
 
 **Gateway won't start**
 ```bash
-quantclaw config get gateway.port   # Check configured port
-quantclaw doctor                    # Run diagnostics
+ravbot config get gateway.port   # Check configured port
+ravbot doctor                    # Run diagnostics
 ```
 
 **Can't connect to gateway**
 ```bash
-quantclaw health    # Check if gateway is running
-quantclaw logs -f   # Follow logs to diagnose errors (on Windows use: quantclaw logs -n 50)
-quantclaw status    # Show connection and session counts
+ravbot health    # Check if gateway is running
+ravbot logs -f   # Follow logs to diagnose errors (on Windows use: ravbot logs -n 50)
+ravbot status    # Show connection and session counts
 ```
 
 **API calls failing**
-- Verify your LLM API key in `~/.quantclaw/quantclaw.json`
+- Verify your LLM API key in `~/.ravbot/ravbot.json`
 - Check `providers.openai.baseUrl` if using a custom endpoint
-- Run `quantclaw doctor` for a full diagnostic report
+- Run `ravbot doctor` for a full diagnostic report
 
 **Config changes not taking effect**
 ```bash
-quantclaw config reload   # Hot-reload without restarting the gateway
+ravbot config reload   # Hot-reload without restarting the gateway
 ```
 
 **Build failures**
@@ -945,7 +945,7 @@ Contributions are welcome!
 
 ### Code style
 
-QuantClaw follows the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html). The repository standard is `clang-format-18`, and CI runs `./scripts/format-code.sh --check`.
+RavBot follows the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html). The repository standard is `clang-format-18`, and CI runs `./scripts/format-code.sh --check`.
 
 **VS Code** — add to `.vscode/settings.json`:
 
@@ -974,14 +974,14 @@ chmod +x .git/hooks/pre-commit
 Tests use [Google Test](https://github.com/google/googletest). Run a specific suite with:
 
 ```bash
-./build/quantclaw_tests --gtest_filter=AgentLoopTest.*
+./build/ravbot_tests --gtest_filter=AgentLoopTest.*
 ```
 
 Example test structure:
 
 ```cpp
 #include <gtest/gtest.h>
-#include "quantclaw/my_module.hpp"
+#include "ravbot/my_module.hpp"
 
 TEST(MyModuleTest, BasicFunctionality) {
     MyModule module;
@@ -1009,4 +1009,4 @@ TEST(MyModuleTest, BasicFunctionality) {
 - README updated if adding user-facing features
 - Unit tests added for new functionality
 
-Questions? Open an [issue](https://github.com/QuantClaw/QuantClaw/issues) or start a [discussion](https://github.com/QuantClaw/QuantClaw/discussions).
+Questions? Open an [issue](https://github.com/RavBot/RavBot/issues) or start a [discussion](https://github.com/RavBot/RavBot/discussions).

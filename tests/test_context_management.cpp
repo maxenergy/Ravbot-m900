@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <cstdlib>
@@ -13,14 +13,14 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/core/context_pruner.hpp"
-#include "quantclaw/core/memory_search.hpp"
-#include "quantclaw/gateway/command_queue.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/core/context_pruner.hpp"
+#include "ravbot/core/memory_search.hpp"
+#include "ravbot/gateway/command_queue.hpp"
 
 #include <gtest/gtest.h>
 
-namespace quantclaw {
+namespace ravbot {
 
 // ================================================================
 // ContextPruner Tests
@@ -728,4 +728,4 @@ TEST_F(ContextPrunerTest, NonPositiveThresholdsStillPruneSafely) {
   EXPECT_TRUE(found_pruned_tool_result);
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

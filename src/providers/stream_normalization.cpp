@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/providers/stream_normalization.hpp"
+#include "ravbot/providers/stream_normalization.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -11,10 +11,10 @@
 #include <unordered_map>
 #include <utility>
 
-#include "quantclaw/common/string_util.hpp"
-#include "quantclaw/core/content_block.hpp"
+#include "ravbot/common/string_util.hpp"
+#include "ravbot/core/content_block.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 namespace {
 
 constexpr size_t kReplayToolCallNameMaxChars = 64;
@@ -665,4 +665,4 @@ FinalizePendingToolCalls(const std::vector<PendingToolCallFragment>& pending,
   return normalized;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

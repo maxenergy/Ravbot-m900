@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/cli/model_auth_commands.hpp"
+#include "ravbot/cli/model_auth_commands.hpp"
 
 #include <chrono>
 #include <ctime>
@@ -9,7 +9,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace quantclaw::cli {
+namespace ravbot::cli {
 namespace {
 
 std::string format_expiry(std::int64_t expires_at) {
@@ -174,7 +174,7 @@ int HandleModelsAuthCommand(const std::vector<std::string>& args,
   const std::string subcommand = args.empty() ? "status" : args.front();
   std::string provider;
   if (!parse_provider_flag(args, &provider)) {
-    err << "Usage: quantclaw models auth <login|status|logout> --provider "
+    err << "Usage: ravbot models auth <login|status|logout> --provider "
            "<openai-codex|github-copilot>\n";
     return 1;
   }
@@ -210,7 +210,7 @@ int HandleModelsAuthCommand(const std::vector<std::string>& args,
       return handle_github_copilot_logout(ctx, out);
     }
 
-    err << "Usage: quantclaw models auth "
+    err << "Usage: ravbot models auth "
            "<login|login-github-copilot|status|logout> --provider "
            "<openai-codex|github-copilot>\n";
     return 1;
@@ -220,4 +220,4 @@ int HandleModelsAuthCommand(const std::vector<std::string>& args,
   }
 }
 
-}  // namespace quantclaw::cli
+}  // namespace ravbot::cli

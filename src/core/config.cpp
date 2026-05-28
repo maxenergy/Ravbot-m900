@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/config.hpp"
+#include "ravbot/config.hpp"
 
 #include <cstdlib>
 #include <filesystem>
@@ -10,10 +10,10 @@
 #include <set>
 #include <stdexcept>
 
-namespace quantclaw {
+namespace ravbot {
 
 // Static member definition
-std::string QuantClawConfig::config_path_override_;
+std::string RavBotConfig::config_path_override_;
 
 // ---------------------------------------------------------------------------
 // ${VAR} environment variable substitution
@@ -324,7 +324,7 @@ SkillsConfig SkillsConfig::FromJson(const nlohmann::json& json) {
     config.configs = json["configs"];
   }
 
-  // QuantClaw format: skills.load, skills.entries
+  // RavBot format: skills.load, skills.entries
   if (json.contains("load") && json["load"].is_object()) {
     config.load = SkillsLoadConfig::FromJson(json["load"]);
   }
@@ -344,7 +344,7 @@ SkillsConfig SkillsConfig::FromJson(const nlohmann::json& json) {
 GatewayConfig GatewayConfig::FromJson(const nlohmann::json& json) {
   GatewayConfig config;
   config.port =
-      json.value("port", kDefaultGatewayPort);  // QuantClaw WebSocket RPC port
+      json.value("port", kDefaultGatewayPort);  // RavBot WebSocket RPC port
   config.bind = json.value("bind", "loopback");
   if (json.contains("auth")) {
     config.auth = GatewayAuthConfig::FromJson(json["auth"]);
@@ -355,7 +355,7 @@ GatewayConfig GatewayConfig::FromJson(const nlohmann::json& json) {
   return config;
 }
 
-QuantClawConfig QuantClawConfig::FromJson(const nlohmann::json& json) {
+RavBotConfig RavBotConfig::FromJson(const nlohmann::json& json) {
   // Expand ${VAR} references in a mutable copy
   nlohmann::json expanded = json;
   expand_env_in_json(expanded);
@@ -363,8 +363,8 @@ QuantClawConfig QuantClawConfig::FromJson(const nlohmann::json& json) {
   return FromJsonExpanded(expanded);
 }
 
-QuantClawConfig QuantClawConfig::FromJsonExpanded(const nlohmann::json& json) {
-  QuantClawConfig config;
+RavBotConfig RavBotConfig::FromJsonExpanded(const nlohmann::json& json) {
+  RavBotConfig config;
 
   // ================================================================
   // OpenClaw "system" section → system config + gateway port
@@ -398,7 +398,7 @@ QuantClawConfig QuantClawConfig::FromJsonExpanded(const nlohmann::json& json) {
   }
 
   // ================================================================
-  // QuantClaw "agent" section (takes priority over llm if both exist)
+  // RavBot "agent" section (takes priority over llm if both exist)
   // ================================================================
   if (json.contains("agent") && json["agent"].is_object()) {
     config.agent = AgentConfig::FromJson(json["agent"]);
@@ -415,7 +415,7 @@ QuantClawConfig QuantClawConfig::FromJsonExpanded(const nlohmann::json& json) {
   }
 
   // ================================================================
-  // Providers (QuantClaw multi-provider format, merges with llm-derived
+  // Providers (RavBot multi-provider format, merges with llm-derived
   // provider)
   // ================================================================
   if (json.contains("providers") && json["providers"].is_object()) {
@@ -490,7 +490,7 @@ QuantClawConfig QuantClawConfig::FromJsonExpanded(const nlohmann::json& json) {
   }
 
   // ================================================================
-  // Skills (both OpenClaw and QuantClaw format)
+  // Skills (both OpenClaw and RavBot format)
   // ================================================================
   if (json.contains("skills") && json["skills"].is_object()) {
     config.skills = SkillsConfig::FromJson(json["skills"]);
@@ -613,7 +613,7 @@ static void write_json_file(const std::string& filepath,
   file << j.dump(2) << std::endl;
 }
 
-void QuantClawConfig::SetValue(const std::string& filepath,
+void RavBotConfig::SetValue(const std::string& filepath,
                                const std::string& dot_path,
                                const nlohmann::json& value) {
   std::string expanded = ExpandHome(filepath);
@@ -634,7 +634,7 @@ void QuantClawConfig::SetValue(const std::string& filepath,
   write_json_file(expanded, root);
 }
 
-void QuantClawConfig::UnsetValue(const std::string& filepath,
+void RavBotConfig::UnsetValue(const std::string& filepath,
                                  const std::string& dot_path) {
   std::string expanded = ExpandHome(filepath);
   auto root = read_json_file(expanded);
@@ -654,7 +654,7 @@ void QuantClawConfig::UnsetValue(const std::string& filepath,
   write_json_file(expanded, root);
 }
 
-std::string QuantClawConfig::ExpandHome(const std::string& path) {
+std::string RavBotConfig::ExpandHome(const std::string& path) {
   std::string expanded = path;
   if (expanded.size() >= 2 && expanded.substr(0, 2) == "~/") {
     const char* home = std::getenv("HOME");
@@ -669,18 +669,18 @@ std::string QuantClawConfig::ExpandHome(const std::string& path) {
   return expanded;
 }
 
-std::string QuantClawConfig::DefaultConfigPath() {
+std::string RavBotConfig::DefaultConfigPath() {
   if (!config_path_override_.empty()) {
     return config_path_override_;
   }
-  return ExpandHome("~/.quantclaw/quantclaw.json");
+  return ExpandHome("~/.ravbot/ravbot.json");
 }
 
-void QuantClawConfig::set_config_path(const std::string& path) {
+void RavBotConfig::set_config_path(const std::string& path) {
   config_path_override_ = path;
 }
 
-QuantClawConfig QuantClawConfig::LoadFromFile(const std::string& filepath) {
+RavBotConfig RavBotConfig::LoadFromFile(const std::string& filepath) {
   std::string expanded_path = ExpandHome(filepath);
 
   if (!std::filesystem::exists(expanded_path)) {
@@ -715,4 +715,4 @@ int AgentConfig::DynamicMaxIterations() const {
          static_cast<int>(ratio * (kMaxMaxIterations - kMinMaxIterations));
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

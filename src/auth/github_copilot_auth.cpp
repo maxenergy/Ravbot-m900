@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/auth/github_copilot_auth.hpp"
+#include "ravbot/auth/github_copilot_auth.hpp"
 
 #include <cerrno>
 #include <chrono>
@@ -23,10 +23,10 @@
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 
-#include "quantclaw/providers/curl_raii.hpp"
-#include "quantclaw/providers/provider_error.hpp"
+#include "ravbot/providers/curl_raii.hpp"
+#include "ravbot/providers/provider_error.hpp"
 
-namespace quantclaw::auth {
+namespace ravbot::auth {
 namespace {
 
 constexpr char kClientId[] = "Iv1.b507a08c87ecfe98";
@@ -56,7 +56,7 @@ std::string post_form(const std::string& url, const std::string& body) {
   CurlSlist headers;
   headers.append("Accept: application/json");
   headers.append("Content-Type: application/x-www-form-urlencoded");
-  headers.append("User-Agent: QuantClaw/0.3.0");
+  headers.append("User-Agent: RavBot/0.3.0");
 
   curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl, CURLOPT_POST, 1L);
@@ -86,7 +86,7 @@ std::string get_json(const std::string& url, const std::string& bearer_token) {
   CurlHandle curl;
   CurlSlist headers;
   headers.append("Accept: application/json");
-  headers.append("User-Agent: QuantClaw/0.3.0");
+  headers.append("User-Agent: RavBot/0.3.0");
   headers.append(("Authorization: Bearer " + bearer_token).c_str());
 
   curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
@@ -442,7 +442,7 @@ GitHubCopilotRuntimeResolver::ResolveRuntimeCredential(
   if (!record.has_value() || record->access_token.empty()) {
     throw ProviderError(
         ProviderErrorKind::kAuthError, 401,
-        "GitHub Copilot is not logged in. Run `quantclaw models "
+        "GitHub Copilot is not logged in. Run `ravbot models "
         "auth login --provider github-copilot`.",
         "github-copilot");
   }
@@ -452,4 +452,4 @@ GitHubCopilotRuntimeResolver::ResolveRuntimeCredential(
   return runtime;
 }
 
-}  // namespace quantclaw::auth
+}  // namespace ravbot::auth

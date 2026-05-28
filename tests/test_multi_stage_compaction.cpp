@@ -1,15 +1,15 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/core/default_context_engine.hpp"
-#include "quantclaw/core/multi_stage_compaction.hpp"
+#include "ravbot/core/default_context_engine.hpp"
+#include "ravbot/core/multi_stage_compaction.hpp"
 
 #include <gtest/gtest.h>
 
-namespace quantclaw {
+namespace ravbot {
 
 class MultiStageCompactionTest : public ::testing::Test {
  protected:
@@ -247,4 +247,4 @@ TEST_F(MultiStageCompactionTest, DefaultEngineFallbackWithoutSummaryFn) {
   EXPECT_NE(result[1].text().find("overflow"), std::string::npos);
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

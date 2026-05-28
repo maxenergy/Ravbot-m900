@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/channels/adapter_manager.hpp"
+#include "ravbot/channels/adapter_manager.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -10,7 +10,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace quantclaw {
+namespace ravbot {
 
 ChannelAdapterManager::ChannelAdapterManager(
     int gateway_port, const std::string& auth_token,
@@ -30,8 +30,8 @@ std::string ChannelAdapterManager::find_adapter_script(
   std::string home = platform::home_directory();
 
   std::vector<std::string> search_paths = {
-      home + "/.quantclaw/src/adapters/" + channel_name + ".ts",
-      home + "/.quantclaw/adapters/" + channel_name + ".ts",
+      home + "/.ravbot/src/adapters/" + channel_name + ".ts",
+      home + "/.ravbot/adapters/" + channel_name + ".ts",
   };
 
   // Relative to the executable's directory
@@ -68,10 +68,10 @@ bool ChannelAdapterManager::launch_adapter(AdapterProcess& adapter,
 
   // Build environment variables
   std::vector<std::string> env;
-  env.push_back("QUANTCLAW_GATEWAY_URL=" + gateway_url);
-  env.push_back("QUANTCLAW_AUTH_TOKEN=" + auth_token_);
-  env.push_back("QUANTCLAW_CHANNEL_NAME=" + adapter.name);
-  env.push_back("QUANTCLAW_CHANNEL_CONFIG=" + config_json.dump());
+  env.push_back("RAVBOT_GATEWAY_URL=" + gateway_url);
+  env.push_back("RAVBOT_AUTH_TOKEN=" + auth_token_);
+  env.push_back("RAVBOT_CHANNEL_NAME=" + adapter.name);
+  env.push_back("RAVBOT_CHANNEL_CONFIG=" + config_json.dump());
   if (!config.token.empty()) {
     std::string env_name = adapter.name;
     for (auto& c : env_name)
@@ -263,4 +263,4 @@ void ChannelAdapterManager::monitor_loop() {
   }
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/mmr_reranker.hpp"
+#include "ravbot/core/mmr_reranker.hpp"
 
 #include <algorithm>
 #include <cctype>
 #include <sstream>
 #include <unordered_set>
 
-namespace quantclaw {
+namespace ravbot {
 
 namespace {
 
@@ -98,4 +98,4 @@ MMRReranker::Rerank(const std::vector<RankedItem>& items, int top_k,
   return selected;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -28,7 +28,7 @@ using socket_t = int;
 static constexpr socket_t kInvalidSocket = -1;
 #endif
 
-namespace quantclaw::test {
+namespace ravbot::test {
 
 namespace detail {
 
@@ -183,4 +183,4 @@ inline bool WaitForServerReady(int port, int timeout_ms = 5000) {
   return false;
 }
 
-}  // namespace quantclaw::test
+}  // namespace ravbot::test

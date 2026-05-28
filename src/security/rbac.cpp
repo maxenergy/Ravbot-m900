@@ -1,11 +1,11 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/security/rbac.hpp"
+#include "ravbot/security/rbac.hpp"
 
-#include "quantclaw/gateway/protocol.hpp"
+#include "ravbot/gateway/protocol.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 Role RoleFromString(const std::string& s) {
   if (s == "viewer")
@@ -133,4 +133,4 @@ RBACChecker::RequiredScopes(const std::string& method) const {
   return std::vector<std::string>(it->second.begin(), it->second.end());
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

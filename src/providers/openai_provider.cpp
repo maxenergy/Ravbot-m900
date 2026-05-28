@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/providers/openai_provider.hpp"
+#include "ravbot/providers/openai_provider.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -14,10 +14,10 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/providers/provider_error.hpp"
-#include "quantclaw/providers/stream_normalization.hpp"
+#include "ravbot/providers/provider_error.hpp"
+#include "ravbot/providers/stream_normalization.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 namespace detail {
 
@@ -681,4 +681,4 @@ std::vector<std::string> OpenAIProvider::GetSupportedModels() const {
   return {"gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"};
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

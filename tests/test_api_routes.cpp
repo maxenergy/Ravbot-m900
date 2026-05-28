@@ -1,4 +1,4 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #include <chrono>
@@ -10,41 +10,41 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/config.hpp"
-#include "quantclaw/core/agent_loop.hpp"
-#include "quantclaw/core/memory_manager.hpp"
-#include "quantclaw/core/prompt_builder.hpp"
-#include "quantclaw/core/skill_loader.hpp"
-#include "quantclaw/gateway/gateway_server.hpp"
-#include "quantclaw/providers/llm_provider.hpp"
-#include "quantclaw/session/session_manager.hpp"
-#include "quantclaw/tools/tool_registry.hpp"
-#include "quantclaw/web/api_routes.hpp"
-#include "quantclaw/web/web_server.hpp"
+#include "ravbot/config.hpp"
+#include "ravbot/core/agent_loop.hpp"
+#include "ravbot/core/memory_manager.hpp"
+#include "ravbot/core/prompt_builder.hpp"
+#include "ravbot/core/skill_loader.hpp"
+#include "ravbot/gateway/gateway_server.hpp"
+#include "ravbot/providers/llm_provider.hpp"
+#include "ravbot/session/session_manager.hpp"
+#include "ravbot/tools/tool_registry.hpp"
+#include "ravbot/web/api_routes.hpp"
+#include "ravbot/web/web_server.hpp"
 
 #include "test_helpers.hpp"
 #include <gtest/gtest.h>
 
 // Mock LLM provider
-class ApiMockLLMProvider : public quantclaw::LLMProvider {
+class ApiMockLLMProvider : public ravbot::LLMProvider {
  public:
-  quantclaw::ChatCompletionResponse
-  ChatCompletion(const quantclaw::ChatCompletionRequest&) override {
-    quantclaw::ChatCompletionResponse resp;
+  ravbot::ChatCompletionResponse
+  ChatCompletion(const ravbot::ChatCompletionRequest&) override {
+    ravbot::ChatCompletionResponse resp;
     resp.content = "mock api reply";
     resp.finish_reason = "stop";
     return resp;
   }
 
   void ChatCompletionStream(
-      const quantclaw::ChatCompletionRequest&,
-      std::function<void(const quantclaw::ChatCompletionResponse&)> cb)
+      const ravbot::ChatCompletionRequest&,
+      std::function<void(const ravbot::ChatCompletionResponse&)> cb)
       override {
-    quantclaw::ChatCompletionResponse delta;
+    ravbot::ChatCompletionResponse delta;
     delta.content = "mock api reply";
     cb(delta);
 
-    quantclaw::ChatCompletionResponse end;
+    ravbot::ChatCompletionResponse end;
     end.content = "mock api reply";
     end.is_stream_end = true;
     cb(end);
@@ -61,7 +61,7 @@ class ApiMockLLMProvider : public quantclaw::LLMProvider {
 class ApiRoutesTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_api_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_api_test");
     workspace_dir_ = test_dir_ / "workspace";
     sessions_dir_ = test_dir_ / "sessions";
     std::filesystem::create_directories(workspace_dir_);
@@ -78,40 +78,40 @@ class ApiRoutesTest : public ::testing::Test {
     config_.gateway.auth.mode = "none";
 
     memory_manager_ =
-        std::make_shared<quantclaw::MemoryManager>(workspace_dir_, logger_);
-    skill_loader_ = std::make_shared<quantclaw::SkillLoader>(logger_);
-    tool_registry_ = std::make_shared<quantclaw::ToolRegistry>(logger_);
+        std::make_shared<ravbot::MemoryManager>(workspace_dir_, logger_);
+    skill_loader_ = std::make_shared<ravbot::SkillLoader>(logger_);
+    tool_registry_ = std::make_shared<ravbot::ToolRegistry>(logger_);
     tool_registry_->RegisterBuiltinTools();
 
     mock_llm_ = std::make_shared<ApiMockLLMProvider>();
-    agent_loop_ = std::make_shared<quantclaw::AgentLoop>(
+    agent_loop_ = std::make_shared<ravbot::AgentLoop>(
         memory_manager_, skill_loader_, tool_registry_, mock_llm_,
         config_.agent, logger_);
     session_manager_ =
-        std::make_shared<quantclaw::SessionManager>(sessions_dir_, logger_);
-    prompt_builder_ = std::make_shared<quantclaw::PromptBuilder>(
+        std::make_shared<ravbot::SessionManager>(sessions_dir_, logger_);
+    prompt_builder_ = std::make_shared<ravbot::PromptBuilder>(
         memory_manager_, skill_loader_, tool_registry_);
 
     // Gateway server (needed for uptime/connections in /api/health and
     // /api/status)
     gateway_server_ =
-        std::make_unique<quantclaw::gateway::GatewayServer>(gw_port_, logger_);
+        std::make_unique<ravbot::gateway::GatewayServer>(gw_port_, logger_);
     gateway_server_->SetAuth("none", "");
-    quantclaw::test::ReleaseHeldPort(gw_port_);
+    ravbot::test::ReleaseHeldPort(gw_port_);
     gateway_server_->Start();
 
     // HTTP API server
     http_server_ =
-        std::make_unique<quantclaw::web::WebServer>(http_port_, logger_);
+        std::make_unique<ravbot::web::WebServer>(http_port_, logger_);
     http_server_->EnableCors("*");
 
-    quantclaw::web::register_api_routes(
+    ravbot::web::register_api_routes(
         *http_server_, session_manager_, agent_loop_, prompt_builder_,
         tool_registry_, config_, *gateway_server_, logger_);
 
-    quantclaw::test::ReleaseHeldPort(http_port_);
+    ravbot::test::ReleaseHeldPort(http_port_);
     http_server_->Start();
-    ASSERT_TRUE(quantclaw::test::WaitForServerReady(http_port_, 5000))
+    ASSERT_TRUE(ravbot::test::WaitForServerReady(http_port_, 5000))
         << "HTTP server not ready on port " << http_port_;
   }
 
@@ -134,7 +134,7 @@ class ApiRoutesTest : public ::testing::Test {
   }
 
   static int next_port() {
-    return quantclaw::test::FindFreePort();
+    return ravbot::test::FindFreePort();
   }
 
   int gw_port_ = next_port();
@@ -143,16 +143,16 @@ class ApiRoutesTest : public ::testing::Test {
   std::filesystem::path workspace_dir_;
   std::filesystem::path sessions_dir_;
   std::shared_ptr<spdlog::logger> logger_;
-  quantclaw::QuantClawConfig config_;
-  std::shared_ptr<quantclaw::MemoryManager> memory_manager_;
-  std::shared_ptr<quantclaw::SkillLoader> skill_loader_;
-  std::shared_ptr<quantclaw::ToolRegistry> tool_registry_;
+  ravbot::RavBotConfig config_;
+  std::shared_ptr<ravbot::MemoryManager> memory_manager_;
+  std::shared_ptr<ravbot::SkillLoader> skill_loader_;
+  std::shared_ptr<ravbot::ToolRegistry> tool_registry_;
   std::shared_ptr<ApiMockLLMProvider> mock_llm_;
-  std::shared_ptr<quantclaw::AgentLoop> agent_loop_;
-  std::shared_ptr<quantclaw::SessionManager> session_manager_;
-  std::shared_ptr<quantclaw::PromptBuilder> prompt_builder_;
-  std::unique_ptr<quantclaw::gateway::GatewayServer> gateway_server_;
-  std::unique_ptr<quantclaw::web::WebServer> http_server_;
+  std::shared_ptr<ravbot::AgentLoop> agent_loop_;
+  std::shared_ptr<ravbot::SessionManager> session_manager_;
+  std::shared_ptr<ravbot::PromptBuilder> prompt_builder_;
+  std::unique_ptr<ravbot::gateway::GatewayServer> gateway_server_;
+  std::unique_ptr<ravbot::web::WebServer> http_server_;
 };
 
 // --- Health ---
@@ -348,7 +348,7 @@ TEST_F(ApiRoutesTest, CorsHeaders) {
 class ApiRoutesAuthTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_api_auth_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_api_auth_test");
     workspace_dir_ = test_dir_ / "workspace";
     sessions_dir_ = test_dir_ / "sessions";
     std::filesystem::create_directories(workspace_dir_);
@@ -362,35 +362,35 @@ class ApiRoutesAuthTest : public ::testing::Test {
     config_.gateway.port = gw_port_;
 
     memory_manager_ =
-        std::make_shared<quantclaw::MemoryManager>(workspace_dir_, logger_);
-    skill_loader_ = std::make_shared<quantclaw::SkillLoader>(logger_);
-    tool_registry_ = std::make_shared<quantclaw::ToolRegistry>(logger_);
+        std::make_shared<ravbot::MemoryManager>(workspace_dir_, logger_);
+    skill_loader_ = std::make_shared<ravbot::SkillLoader>(logger_);
+    tool_registry_ = std::make_shared<ravbot::ToolRegistry>(logger_);
     mock_llm_ = std::make_shared<ApiMockLLMProvider>();
-    agent_loop_ = std::make_shared<quantclaw::AgentLoop>(
+    agent_loop_ = std::make_shared<ravbot::AgentLoop>(
         memory_manager_, skill_loader_, tool_registry_, mock_llm_,
         config_.agent, logger_);
     session_manager_ =
-        std::make_shared<quantclaw::SessionManager>(sessions_dir_, logger_);
-    prompt_builder_ = std::make_shared<quantclaw::PromptBuilder>(
+        std::make_shared<ravbot::SessionManager>(sessions_dir_, logger_);
+    prompt_builder_ = std::make_shared<ravbot::PromptBuilder>(
         memory_manager_, skill_loader_, tool_registry_);
 
     gateway_server_ =
-        std::make_unique<quantclaw::gateway::GatewayServer>(gw_port_, logger_);
+        std::make_unique<ravbot::gateway::GatewayServer>(gw_port_, logger_);
     gateway_server_->SetAuth("none", "");
-    quantclaw::test::ReleaseHeldPort(gw_port_);
+    ravbot::test::ReleaseHeldPort(gw_port_);
     gateway_server_->Start();
 
     http_server_ =
-        std::make_unique<quantclaw::web::WebServer>(http_port_, logger_);
+        std::make_unique<ravbot::web::WebServer>(http_port_, logger_);
     http_server_->SetAuthToken("secret-token-123");
 
-    quantclaw::web::register_api_routes(
+    ravbot::web::register_api_routes(
         *http_server_, session_manager_, agent_loop_, prompt_builder_,
         tool_registry_, config_, *gateway_server_, logger_);
 
-    quantclaw::test::ReleaseHeldPort(http_port_);
+    ravbot::test::ReleaseHeldPort(http_port_);
     http_server_->Start();
-    ASSERT_TRUE(quantclaw::test::WaitForServerReady(http_port_, 5000))
+    ASSERT_TRUE(ravbot::test::WaitForServerReady(http_port_, 5000))
         << "HTTP server not ready on port " << http_port_;
   }
 
@@ -409,7 +409,7 @@ class ApiRoutesAuthTest : public ::testing::Test {
   }
 
   static int next_port() {
-    return quantclaw::test::FindFreePort();
+    return ravbot::test::FindFreePort();
   }
 
   int gw_port_ = next_port();
@@ -418,16 +418,16 @@ class ApiRoutesAuthTest : public ::testing::Test {
   std::filesystem::path workspace_dir_;
   std::filesystem::path sessions_dir_;
   std::shared_ptr<spdlog::logger> logger_;
-  quantclaw::QuantClawConfig config_;
-  std::shared_ptr<quantclaw::MemoryManager> memory_manager_;
-  std::shared_ptr<quantclaw::SkillLoader> skill_loader_;
-  std::shared_ptr<quantclaw::ToolRegistry> tool_registry_;
+  ravbot::RavBotConfig config_;
+  std::shared_ptr<ravbot::MemoryManager> memory_manager_;
+  std::shared_ptr<ravbot::SkillLoader> skill_loader_;
+  std::shared_ptr<ravbot::ToolRegistry> tool_registry_;
   std::shared_ptr<ApiMockLLMProvider> mock_llm_;
-  std::shared_ptr<quantclaw::AgentLoop> agent_loop_;
-  std::shared_ptr<quantclaw::SessionManager> session_manager_;
-  std::shared_ptr<quantclaw::PromptBuilder> prompt_builder_;
-  std::unique_ptr<quantclaw::gateway::GatewayServer> gateway_server_;
-  std::unique_ptr<quantclaw::web::WebServer> http_server_;
+  std::shared_ptr<ravbot::AgentLoop> agent_loop_;
+  std::shared_ptr<ravbot::SessionManager> session_manager_;
+  std::shared_ptr<ravbot::PromptBuilder> prompt_builder_;
+  std::unique_ptr<ravbot::gateway::GatewayServer> gateway_server_;
+  std::unique_ptr<ravbot::web::WebServer> http_server_;
 };
 
 TEST_F(ApiRoutesAuthTest, RejectWithoutToken) {
@@ -460,7 +460,7 @@ TEST_F(ApiRoutesAuthTest, HealthBypassesAuth) {
 class ApiRoutesReloadTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_api_reload_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_api_reload_test");
     workspace_dir_ = test_dir_ / "workspace";
     sessions_dir_ = test_dir_ / "sessions";
     std::filesystem::create_directories(workspace_dir_);
@@ -477,40 +477,40 @@ class ApiRoutesReloadTest : public ::testing::Test {
     config_.gateway.auth.mode = "none";
 
     memory_manager_ =
-        std::make_shared<quantclaw::MemoryManager>(workspace_dir_, logger_);
-    skill_loader_ = std::make_shared<quantclaw::SkillLoader>(logger_);
-    tool_registry_ = std::make_shared<quantclaw::ToolRegistry>(logger_);
+        std::make_shared<ravbot::MemoryManager>(workspace_dir_, logger_);
+    skill_loader_ = std::make_shared<ravbot::SkillLoader>(logger_);
+    tool_registry_ = std::make_shared<ravbot::ToolRegistry>(logger_);
     tool_registry_->RegisterBuiltinTools();
 
     mock_llm_ = std::make_shared<ApiMockLLMProvider>();
-    agent_loop_ = std::make_shared<quantclaw::AgentLoop>(
+    agent_loop_ = std::make_shared<ravbot::AgentLoop>(
         memory_manager_, skill_loader_, tool_registry_, mock_llm_,
         config_.agent, logger_);
     session_manager_ =
-        std::make_shared<quantclaw::SessionManager>(sessions_dir_, logger_);
-    prompt_builder_ = std::make_shared<quantclaw::PromptBuilder>(
+        std::make_shared<ravbot::SessionManager>(sessions_dir_, logger_);
+    prompt_builder_ = std::make_shared<ravbot::PromptBuilder>(
         memory_manager_, skill_loader_, tool_registry_);
 
     reload_called_ = false;
     reload_fn_ = [this]() { reload_called_ = true; };
 
     gateway_server_ =
-        std::make_unique<quantclaw::gateway::GatewayServer>(gw_port_, logger_);
+        std::make_unique<ravbot::gateway::GatewayServer>(gw_port_, logger_);
     gateway_server_->SetAuth("none", "");
-    quantclaw::test::ReleaseHeldPort(gw_port_);
+    ravbot::test::ReleaseHeldPort(gw_port_);
     gateway_server_->Start();
 
     http_server_ =
-        std::make_unique<quantclaw::web::WebServer>(http_port_, logger_);
+        std::make_unique<ravbot::web::WebServer>(http_port_, logger_);
     http_server_->EnableCors("*");
 
-    quantclaw::web::register_api_routes(
+    ravbot::web::register_api_routes(
         *http_server_, session_manager_, agent_loop_, prompt_builder_,
         tool_registry_, config_, *gateway_server_, logger_, reload_fn_);
 
-    quantclaw::test::ReleaseHeldPort(http_port_);
+    ravbot::test::ReleaseHeldPort(http_port_);
     http_server_->Start();
-    ASSERT_TRUE(quantclaw::test::WaitForServerReady(http_port_, 5000))
+    ASSERT_TRUE(ravbot::test::WaitForServerReady(http_port_, 5000))
         << "HTTP server not ready on port " << http_port_;
   }
 
@@ -533,7 +533,7 @@ class ApiRoutesReloadTest : public ::testing::Test {
   }
 
   static int next_port() {
-    return quantclaw::test::FindFreePort();
+    return ravbot::test::FindFreePort();
   }
 
   int gw_port_ = next_port();
@@ -542,16 +542,16 @@ class ApiRoutesReloadTest : public ::testing::Test {
   std::filesystem::path workspace_dir_;
   std::filesystem::path sessions_dir_;
   std::shared_ptr<spdlog::logger> logger_;
-  quantclaw::QuantClawConfig config_;
-  std::shared_ptr<quantclaw::MemoryManager> memory_manager_;
-  std::shared_ptr<quantclaw::SkillLoader> skill_loader_;
-  std::shared_ptr<quantclaw::ToolRegistry> tool_registry_;
+  ravbot::RavBotConfig config_;
+  std::shared_ptr<ravbot::MemoryManager> memory_manager_;
+  std::shared_ptr<ravbot::SkillLoader> skill_loader_;
+  std::shared_ptr<ravbot::ToolRegistry> tool_registry_;
   std::shared_ptr<ApiMockLLMProvider> mock_llm_;
-  std::shared_ptr<quantclaw::AgentLoop> agent_loop_;
-  std::shared_ptr<quantclaw::SessionManager> session_manager_;
-  std::shared_ptr<quantclaw::PromptBuilder> prompt_builder_;
-  std::unique_ptr<quantclaw::gateway::GatewayServer> gateway_server_;
-  std::unique_ptr<quantclaw::web::WebServer> http_server_;
+  std::shared_ptr<ravbot::AgentLoop> agent_loop_;
+  std::shared_ptr<ravbot::SessionManager> session_manager_;
+  std::shared_ptr<ravbot::PromptBuilder> prompt_builder_;
+  std::unique_ptr<ravbot::gateway::GatewayServer> gateway_server_;
+  std::unique_ptr<ravbot::web::WebServer> http_server_;
   std::function<void()> reload_fn_;
   bool reload_called_;
 };
@@ -575,7 +575,7 @@ TEST_F(ApiRoutesReloadTest, ConfigReloadEndpoint) {
 class ApiGatewayInfoTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_dir_ = quantclaw::test::MakeTestDir("quantclaw_api_gwinfo_test");
+    test_dir_ = ravbot::test::MakeTestDir("ravbot_api_gwinfo_test");
     workspace_dir_ = test_dir_ / "workspace";
     sessions_dir_ = test_dir_ / "sessions";
     std::filesystem::create_directories(workspace_dir_);
@@ -592,31 +592,31 @@ class ApiGatewayInfoTest : public ::testing::Test {
     config_.gateway.auth.mode = "none";
 
     memory_manager_ =
-        std::make_shared<quantclaw::MemoryManager>(workspace_dir_, logger_);
-    skill_loader_ = std::make_shared<quantclaw::SkillLoader>(logger_);
-    tool_registry_ = std::make_shared<quantclaw::ToolRegistry>(logger_);
+        std::make_shared<ravbot::MemoryManager>(workspace_dir_, logger_);
+    skill_loader_ = std::make_shared<ravbot::SkillLoader>(logger_);
+    tool_registry_ = std::make_shared<ravbot::ToolRegistry>(logger_);
     tool_registry_->RegisterBuiltinTools();
 
     mock_llm_ = std::make_shared<ApiMockLLMProvider>();
-    agent_loop_ = std::make_shared<quantclaw::AgentLoop>(
+    agent_loop_ = std::make_shared<ravbot::AgentLoop>(
         memory_manager_, skill_loader_, tool_registry_, mock_llm_,
         config_.agent, logger_);
     session_manager_ =
-        std::make_shared<quantclaw::SessionManager>(sessions_dir_, logger_);
-    prompt_builder_ = std::make_shared<quantclaw::PromptBuilder>(
+        std::make_shared<ravbot::SessionManager>(sessions_dir_, logger_);
+    prompt_builder_ = std::make_shared<ravbot::PromptBuilder>(
         memory_manager_, skill_loader_, tool_registry_);
 
     gateway_server_ =
-        std::make_unique<quantclaw::gateway::GatewayServer>(gw_port_, logger_);
+        std::make_unique<ravbot::gateway::GatewayServer>(gw_port_, logger_);
     gateway_server_->SetAuth("none", "");
-    quantclaw::test::ReleaseHeldPort(gw_port_);
+    ravbot::test::ReleaseHeldPort(gw_port_);
     gateway_server_->Start();
 
     http_server_ =
-        std::make_unique<quantclaw::web::WebServer>(http_port_, logger_);
+        std::make_unique<ravbot::web::WebServer>(http_port_, logger_);
     http_server_->EnableCors("*");
 
-    quantclaw::web::register_api_routes(
+    ravbot::web::register_api_routes(
         *http_server_, session_manager_, agent_loop_, prompt_builder_,
         tool_registry_, config_, *gateway_server_, logger_);
 
@@ -633,9 +633,9 @@ class ApiGatewayInfoTest : public ::testing::Test {
           res.set_content(info.dump(), "application/json");
         });
 
-    quantclaw::test::ReleaseHeldPort(http_port_);
+    ravbot::test::ReleaseHeldPort(http_port_);
     http_server_->Start();
-    ASSERT_TRUE(quantclaw::test::WaitForServerReady(http_port_, 5000))
+    ASSERT_TRUE(ravbot::test::WaitForServerReady(http_port_, 5000))
         << "HTTP server not ready on port " << http_port_;
   }
 
@@ -658,7 +658,7 @@ class ApiGatewayInfoTest : public ::testing::Test {
   }
 
   static int next_port() {
-    return quantclaw::test::FindFreePort();
+    return ravbot::test::FindFreePort();
   }
 
   int gw_port_ = next_port();
@@ -667,16 +667,16 @@ class ApiGatewayInfoTest : public ::testing::Test {
   std::filesystem::path workspace_dir_;
   std::filesystem::path sessions_dir_;
   std::shared_ptr<spdlog::logger> logger_;
-  quantclaw::QuantClawConfig config_;
-  std::shared_ptr<quantclaw::MemoryManager> memory_manager_;
-  std::shared_ptr<quantclaw::SkillLoader> skill_loader_;
-  std::shared_ptr<quantclaw::ToolRegistry> tool_registry_;
+  ravbot::RavBotConfig config_;
+  std::shared_ptr<ravbot::MemoryManager> memory_manager_;
+  std::shared_ptr<ravbot::SkillLoader> skill_loader_;
+  std::shared_ptr<ravbot::ToolRegistry> tool_registry_;
   std::shared_ptr<ApiMockLLMProvider> mock_llm_;
-  std::shared_ptr<quantclaw::AgentLoop> agent_loop_;
-  std::shared_ptr<quantclaw::SessionManager> session_manager_;
-  std::shared_ptr<quantclaw::PromptBuilder> prompt_builder_;
-  std::unique_ptr<quantclaw::gateway::GatewayServer> gateway_server_;
-  std::unique_ptr<quantclaw::web::WebServer> http_server_;
+  std::shared_ptr<ravbot::AgentLoop> agent_loop_;
+  std::shared_ptr<ravbot::SessionManager> session_manager_;
+  std::shared_ptr<ravbot::PromptBuilder> prompt_builder_;
+  std::unique_ptr<ravbot::gateway::GatewayServer> gateway_server_;
+  std::unique_ptr<ravbot::web::WebServer> http_server_;
 };
 
 TEST_F(ApiGatewayInfoTest, GatewayInfoEndpoint) {

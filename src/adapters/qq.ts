@@ -1,7 +1,7 @@
 /**
- * QuantClaw QQ Adapter
+ * RavBot QQ Adapter
  *
- * Bridges QQ group/private messages to the QuantClaw agent via the gateway
+ * Bridges QQ group/private messages to the RavBot agent via the gateway
  * WebSocket RPC.  Uses the qq-official-bot SDK (WebSocket mode) which talks
  * to the QQ Bot open-platform API v2.
  *
@@ -11,10 +11,10 @@
  *   3. Enable "群聊@消息" and/or "C2C私聊消息" intents in the platform console
  *
  * Environment variables (set by adapter manager):
- *   QUANTCLAW_GATEWAY_URL    — ws://127.0.0.1:18800
- *   QUANTCLAW_AUTH_TOKEN     — gateway auth token
- *   QUANTCLAW_CHANNEL_NAME   — "qq"
- *   QUANTCLAW_CHANNEL_CONFIG — JSON with appId, appSecret, etc.
+ *   RAVBOT_GATEWAY_URL    — ws://127.0.0.1:18800
+ *   RAVBOT_AUTH_TOKEN     — gateway auth token
+ *   RAVBOT_CHANNEL_NAME   — "qq"
+ *   RAVBOT_CHANNEL_CONFIG — JSON with appId, appSecret, etc.
  *
  * Usage:
  *   npm install

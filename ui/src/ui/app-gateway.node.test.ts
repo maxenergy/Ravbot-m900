@@ -97,7 +97,7 @@ function createHost() {
     agentsList: null,
     agentsError: null,
     debugHealth: null,
-    assistantName: "QuantClaw",
+    assistantName: "RavBot",
     assistantAvatar: null,
     assistantAgentId: null,
     sessionKey: "main",

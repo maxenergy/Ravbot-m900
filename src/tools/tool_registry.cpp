@@ -1,7 +1,7 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/tools/tool_registry.hpp"
+#include "ravbot/tools/tool_registry.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -16,20 +16,20 @@
 #include <httplib.h>
 #include <spdlog/spdlog.h>
 
-#include "quantclaw/core/cron_scheduler.hpp"
-#include "quantclaw/core/memory_search.hpp"
+#include "ravbot/core/cron_scheduler.hpp"
+#include "ravbot/core/memory_search.hpp"
 
 namespace fs = std::filesystem;
-#include "quantclaw/core/subagent.hpp"
-#include "quantclaw/mcp/mcp_tool_manager.hpp"
-#include "quantclaw/platform/process.hpp"
-#include "quantclaw/security/exec_approval.hpp"
-#include "quantclaw/security/sandbox.hpp"
-#include "quantclaw/security/tool_permissions.hpp"
-#include "quantclaw/session/session_manager.hpp"
-#include "quantclaw/tools/tool_chain.hpp"
+#include "ravbot/core/subagent.hpp"
+#include "ravbot/mcp/mcp_tool_manager.hpp"
+#include "ravbot/platform/process.hpp"
+#include "ravbot/security/exec_approval.hpp"
+#include "ravbot/security/sandbox.hpp"
+#include "ravbot/security/tool_permissions.hpp"
+#include "ravbot/session/session_manager.hpp"
+#include "ravbot/tools/tool_chain.hpp"
 
-namespace quantclaw {
+namespace ravbot {
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -94,7 +94,7 @@ static std::string generate_id(const std::string& prefix = "bg") {
 
 ToolRegistry::ToolRegistry(std::shared_ptr<spdlog::logger> logger)
     : logger_(logger),
-      workspace_path_((fs::path(platform::home_directory()) / ".quantclaw" /
+      workspace_path_((fs::path(platform::home_directory()) / ".ravbot" /
                        "agents" / "main" / "workspace")
                           .string()) {
   logger_->info("ToolRegistry initialized");
@@ -644,7 +644,7 @@ std::string ToolRegistry::read_file_tool(const nlohmann::json& params) {
   if (!params.contains("path"))
     throw std::runtime_error("Missing required parameter: path");
   std::string path = params["path"].get<std::string>();
-  if (!quantclaw::SecuritySandbox::ValidateFilePath(path, workspace_path_))
+  if (!ravbot::SecuritySandbox::ValidateFilePath(path, workspace_path_))
     throw std::runtime_error("Access denied: path outside workspace: " + path);
   if (!std::filesystem::exists(path))
     throw std::runtime_error("File not found: " + path);
@@ -659,7 +659,7 @@ std::string ToolRegistry::write_file_tool(const nlohmann::json& params) {
     throw std::runtime_error("Missing required parameters: path, content");
   std::string path = params["path"].get<std::string>();
   std::string content = params["content"].get<std::string>();
-  if (!quantclaw::SecuritySandbox::ValidateFilePath(path, workspace_path_))
+  if (!ravbot::SecuritySandbox::ValidateFilePath(path, workspace_path_))
     throw std::runtime_error("Access denied: path outside workspace: " + path);
   std::filesystem::create_directories(
       std::filesystem::path(path).parent_path());
@@ -678,7 +678,7 @@ std::string ToolRegistry::edit_file_tool(const nlohmann::json& params) {
   std::string path = params["path"].get<std::string>();
   std::string old_text = params["oldText"].get<std::string>();
   std::string new_text = params["newText"].get<std::string>();
-  if (!quantclaw::SecuritySandbox::ValidateFilePath(path, workspace_path_))
+  if (!ravbot::SecuritySandbox::ValidateFilePath(path, workspace_path_))
     throw std::runtime_error("Access denied: path outside workspace: " + path);
   std::ifstream f(path);
   if (!f)
@@ -709,7 +709,7 @@ std::string ToolRegistry::exec_tool(const nlohmann::json& params) {
   // Validate workdir stays inside the workspace if specified.
   std::string resolved_workdir = workdir;
   if (!workdir.empty()) {
-    if (!quantclaw::SecuritySandbox::ValidateFilePath(workdir,
+    if (!ravbot::SecuritySandbox::ValidateFilePath(workdir,
                                                       workspace_path_)) {
       throw std::runtime_error("Access denied: workdir outside workspace: " +
                                workdir);
@@ -730,7 +730,7 @@ std::string ToolRegistry::exec_tool(const nlohmann::json& params) {
     }
   }
 
-  if (!quantclaw::SecuritySandbox::ValidateShellCommand(command)) {
+  if (!ravbot::SecuritySandbox::ValidateShellCommand(command)) {
     throw std::runtime_error("Command not allowed: " + command);
   }
 
@@ -1191,7 +1191,7 @@ std::string ToolRegistry::web_search_tool(const nlohmann::json& params) {
 
     httplib::SSLClient cli("html.duckduckgo.com");
     cli.set_default_headers(
-        {{"User-Agent", "QuantClaw/1.0"}, {"Accept", "text/html"}});
+        {{"User-Agent", "RavBot/1.0"}, {"Accept", "text/html"}});
     cli.set_connection_timeout(10);
     cli.set_read_timeout(15);
 
@@ -1491,4 +1491,4 @@ std::string ToolRegistry::memory_get_tool(const nlohmann::json& params) {
   return nlohmann::json{{"path", rel_path}, {"content", content}}.dump();
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

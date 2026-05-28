@@ -1,14 +1,14 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/context_pruner.hpp"
+#include "ravbot/core/context_pruner.hpp"
 
 #include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
 
-namespace quantclaw {
+namespace ravbot {
 
 int ContextPruner::EstimateTokens(const Message& msg) {
   int chars = static_cast<int>(msg.role.size());
@@ -233,4 +233,4 @@ bool ContextPruner::is_stale_tool_error(const std::string& content) {
   return false;
 }
 
-}  // namespace quantclaw
+}  // namespace ravbot

@@ -1,11 +1,11 @@
-// Copyright 2025 QuantClaw Contributors
+// Copyright 2025 RavBot Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "quantclaw/core/message_commands.hpp"
+#include "ravbot/core/message_commands.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace quantclaw;
+using namespace ravbot;
 
 class MessageCommandsTest : public ::testing::Test {
  protected:

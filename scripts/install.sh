@@ -17,10 +17,10 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 PLATFORM=""
 INSTALL_MODE=""
-SOURCE_BINARY="${QUANTCLAW_BUILD_BINARY:-}"
-SKIP_DEPS="${QUANTCLAW_INSTALL_SKIP_DEPS:-0}"
+SOURCE_BINARY="${RAVBOT_BUILD_BINARY:-}"
+SKIP_DEPS="${RAVBOT_INSTALL_SKIP_DEPS:-0}"
 SKIP_SERVICE=0
-TEST_MODE="${QUANTCLAW_INSTALL_TEST_MODE:-0}"
+TEST_MODE="${RAVBOT_INSTALL_TEST_MODE:-0}"
 
 usage() {
   cat <<'EOF'
@@ -28,9 +28,9 @@ Usage:
   ./scripts/install.sh [options]
 
 Options:
-  --user            Install to ~/.quantclaw/bin (default on macOS)
+  --user            Install to ~/.ravbot/bin (default on macOS)
   --system          Install to /usr/local/bin (default on Linux)
-  --binary PATH     Use an existing quantclaw binary instead of building
+  --binary PATH     Use an existing ravbot binary instead of building
   --skip-deps       Skip dependency installation
   --skip-service    Do not install the background service definition
   -h, --help        Show this message
@@ -129,9 +129,9 @@ build_binary() {
     return 0
   fi
 
-  info "Building QuantClaw from source..."
+  info "Building RavBot from source..."
   bash "$ROOT/scripts/build.sh"
-  SOURCE_BINARY="$ROOT/build/quantclaw"
+  SOURCE_BINARY="$ROOT/build/ravbot"
   [[ -x "$SOURCE_BINARY" ]] || die "Build completed but binary not found: $SOURCE_BINARY"
 }
 
@@ -163,15 +163,15 @@ install_binary() {
   local target_home="$1"
   local target_dir=""
   if [[ "$INSTALL_MODE" == "user" ]]; then
-    target_dir="${target_home}/.quantclaw/bin"
+    target_dir="${target_home}/.ravbot/bin"
   else
-    target_dir="${QUANTCLAW_INSTALL_PREFIX:-/usr/local/bin}"
+    target_dir="${RAVBOT_INSTALL_PREFIX:-/usr/local/bin}"
   fi
 
   run_for_target_user "$target_home" mkdir -p "$target_dir"
-  run_for_target_user "$target_home" cp "$SOURCE_BINARY" "${target_dir}/quantclaw"
-  run_for_target_user "$target_home" chmod +x "${target_dir}/quantclaw"
-  echo "${target_dir}/quantclaw"
+  run_for_target_user "$target_home" cp "$SOURCE_BINARY" "${target_dir}/ravbot"
+  run_for_target_user "$target_home" chmod +x "${target_dir}/ravbot"
+  echo "${target_dir}/ravbot"
 }
 
 run_onboard() {
@@ -197,15 +197,15 @@ print_next_steps() {
   local target_bin="$2"
 
   echo
-  success "QuantClaw installed successfully"
+  success "RavBot installed successfully"
   echo
   if [[ "$INSTALL_MODE" == "user" ]]; then
     echo "Add to PATH if needed:"
-    echo "  export PATH=\"${target_home}/.quantclaw/bin:\$PATH\""
+    echo "  export PATH=\"${target_home}/.ravbot/bin:\$PATH\""
     echo
   fi
   echo "Next steps:"
-  echo "  1. Edit ${target_home}/.quantclaw/quantclaw.json with your API keys"
+  echo "  1. Edit ${target_home}/.ravbot/ravbot.json with your API keys"
   echo "  2. Start in foreground: ${target_bin} gateway run"
   echo "  3. Or start via service manager: ${target_bin} gateway start"
   echo "  4. Check status: ${target_bin} status"

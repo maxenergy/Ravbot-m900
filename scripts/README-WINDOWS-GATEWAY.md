@@ -1,8 +1,8 @@
-# QuantClaw - Windows 测试权限问题解决方案
+# RavBot - Windows 测试权限问题解决方案
 
 ## 问题描述
 
-根据 OpenClaw Windows 安装文档，Windows 笔记本环境下，QuantClaw Gateway 服务启动时会遇到权限问题。原因是 `gateway install` 命令尝试创建计划任务（schtasks），但缺少管理员权限。
+根据 OpenClaw Windows 安装文档，Windows 笔记本环境下，RavBot Gateway 服务启动时会遇到权限问题。原因是 `gateway install` 命令尝试创建计划任务（schtasks），但缺少管理员权限。
 
 ## 解决方案
 
@@ -15,34 +15,34 @@
 2. **执行安装脚本**
 
    ```powershell
-   cd d:\test\github\QuantClaw
+   cd d:\test\github\RavBot
    powershell -ExecutionPolicy Bypass -File scripts\gateway-setup-windows.ps1
    ```
 
 3. **脚本功能**
-   - ✅ 自动查找 quantclaw.exe
+   - ✅ 自动查找 ravbot.exe
    - ✅ 创建计划任务（开机自动启动）
    - ✅ 生成配置文件（如果不存在）
-   - ✅ 创建启动辅助脚本 (`~\.quantclaw\gateway.cmd`)
+   - ✅ 创建启动辅助脚本 (`~\.ravbot\gateway.cmd`)
    - ✅ 生成日志文件
 
 4. **验证安装**
 
    ```powershell
    # 检查任务状态
-   schtasks /query /tn "QuantClaw-Gateway"
+   schtasks /query /tn "RavBot-Gateway"
 
    # 检查端口监听（18789 是默认 gateway 端口）
    netstat -ano | findstr :18789
 
    # 手动启动任务
-   schtasks /run /tn "QuantClaw-Gateway"
+   schtasks /run /tn "RavBot-Gateway"
 
    # 停止任务
-   schtasks /end /tn "QuantClaw-Gateway"
+   schtasks /end /tn "RavBot-Gateway"
 
    # 删除任务
-   schtasks /delete /tn "QuantClaw-Gateway" /f
+   schtasks /delete /tn "RavBot-Gateway" /f
    ```
 
 5. **访问控制界面**
@@ -56,7 +56,7 @@
 1. **使用手动启动脚本**
 
    ```batch
-   cd d:\test\github\QuantClaw
+   cd d:\test\github\RavBot
    scripts\gateway-manual.bat
    ```
 
@@ -64,10 +64,10 @@
 
    ```batch
    # 在项目目录下
-   build\quantclaw.exe gateway run
+   build\ravbot.exe gateway run
 
    # 或全局安装后
-   quantclaw gateway run
+   ravbot gateway run
    ```
 
 3. **优点**
@@ -85,7 +85,7 @@
 
 #### 当前实现问题
 
-Windows 的 [service_win32.cpp](file://d:\test\github\QuantClaw\src\platform\service_win32.cpp) 当前仅使用后台进程，没有利用 Windows 计划任务：
+Windows 的 [service_win32.cpp](file://d:\test\github\RavBot\src\platform\service_win32.cpp) 当前仅使用后台进程，没有利用 Windows 计划任务：
 
 ```cpp
 // src/platform/service_win32.cpp
@@ -112,14 +112,14 @@ int ServiceManager::install(int port) {
 
   // 2. 创建计划任务
   std::string schtasks_cmd =
-    "schtasks /create /tn \"QuantClaw-Gateway\" "
+    "schtasks /create /tn \"RavBot-Gateway\" "
     "/tr \"cmd.exe /c \\\"" + state_dir_ + "\\\\gateway.cmd\\\"\" "
     "/sc onlogon /ru \"%USERNAME%\" /rl highest /f";
 
   int ret = std::system(schtasks_cmd.c_str());
   if (ret != 0) {
     logger_->warn("计划任务创建失败，需要管理员权限");
-    logger_->info("请以管理员身份运行: quantclaw gateway install");
+    logger_->info("请以管理员身份运行: ravbot gateway install");
     return 1;
   }
 
@@ -138,8 +138,8 @@ int ServiceManager::install(int port) {
 
 ```bash
 # Linux/Mac (在 WSL 中)
-bash tests/test-cli.sh build/quantclaw
-bash tests/test-onboard.sh build/quantclaw
+bash tests/test-cli.sh build/ravbot
+bash tests/test-onboard.sh build/ravbot
 
 # Windows PowerShell
 # 需要先安装 curl, python3 等依赖
@@ -149,22 +149,22 @@ bash tests/test-onboard.sh build/quantclaw
 
 ```powershell
 # 1. 首次初始化
-quantclaw onboard --quick
+ravbot onboard --quick
 
 # 2. 启动 Gateway（方案二）
 scripts\gateway-manual.bat
 
 # 3. 新开终端，测试 CLI 命令
-quantclaw status
-quantclaw health
-quantclaw config get
-quantclaw skills list
+ravbot status
+ravbot health
+ravbot config get
+ravbot skills list
 
 # 4. 测试 agent
-quantclaw agent -m "你好，测试一下"
+ravbot agent -m "你好，测试一下"
 
 # 5. 检查日志
-type $env:USERPROFILE\.quantclaw\logs\gateway.log
+type $env:USERPROFILE\.ravbot\logs\gateway.log
 ```
 
 ### 3. 计划任务测试（方案一）
@@ -174,7 +174,7 @@ type $env:USERPROFILE\.quantclaw\logs\gateway.log
 powershell -ExecutionPolicy Bypass -File scripts\gateway-setup-windows.ps1
 
 # 2. 启动任务
-schtasks /run /tn "QuantClaw-Gateway"
+schtasks /run /tn "RavBot-Gateway"
 
 # 3. 等待 5 秒后检查
 Start-Sleep -Seconds 5
@@ -184,7 +184,7 @@ netstat -ano | findstr :18789
 curl http://localhost:18790/api/health
 
 # 5. 停止任务
-schtasks /end /tn "QuantClaw-Gateway"
+schtasks /end /tn "RavBot-Gateway"
 ```
 
 ---
@@ -192,7 +192,7 @@ schtasks /end /tn "QuantClaw-Gateway"
 ## 日志文件位置
 
 ```
-%USERPROFILE%\.quantclaw\logs\
+%USERPROFILE%\.ravbot\logs\
 ├── gateway.log              # Gateway 运行日志
 ├── gateway-startup.log      # 启动脚本日志
 └── gateway-manual.log       # 手动启动日志
@@ -229,7 +229,7 @@ powershell -ExecutionPolicy Bypass -File scripts\gateway-setup-windows.ps1
 **解决**: 修改配置文件
 
 ```json
-// %USERPROFILE%\.quantclaw\quantclaw.json
+// %USERPROFILE%\.ravbot\ravbot.json
 {
   "gateway": {
     "port": 18800,  // 改为其他端口
@@ -241,7 +241,7 @@ powershell -ExecutionPolicy Bypass -File scripts\gateway-setup-windows.ps1
 ### Q4: 杀毒软件拦截
 
 **解决**:
-- 将 `quantclaw.exe` 添加到杀毒软件白名单
+- 将 `ravbot.exe` 添加到杀毒软件白名单
 - 临时禁用杀毒软件（仅测试环境）
 
 ---
@@ -259,4 +259,4 @@ powershell -ExecutionPolicy Bypass -File scripts\gateway-setup-windows.ps1
 
 - OpenClaw Windows 安装文档: `refs/windows-openclaw.pdf`
 - Linux 服务实现: [src/platform/service_unix.cpp](src/platform/service_unix.cpp) (使用 systemd)
-- QuantClaw CLI 参考: [website/guide/cli-reference.md](website/guide/cli-reference.md)
+- RavBot CLI 参考: [website/guide/cli-reference.md](website/guide/cli-reference.md)

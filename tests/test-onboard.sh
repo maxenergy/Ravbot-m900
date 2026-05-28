@@ -1,11 +1,11 @@
 #!/bin/bash
-# QuantClaw Onboard Integration Test
+# RavBot Onboard Integration Test
 #
 # Validates the full onboard flow and key CLI commands without requiring a
 # running gateway or a real API key.
 #
 # Usage:
-#   bash tests/test-onboard.sh [/path/to/quantclaw]
+#   bash tests/test-onboard.sh [/path/to/ravbot]
 #
 # Exit code: 0 = all tests passed, non-zero = failures detected.
 #
@@ -16,8 +16,8 @@ set -uo pipefail
 # ---------- Configuration ----------
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BINARY="${1:-${REPO_ROOT}/build/quantclaw}"
-TEST_HOME="/tmp/quantclaw-onboard-$$"
+BINARY="${1:-${REPO_ROOT}/build/ravbot}"
+TEST_HOME="/tmp/ravbot-onboard-$$"
 PASS=0
 FAIL=0
 
@@ -29,7 +29,7 @@ trap cleanup EXIT
 pass() { echo "  [PASS] $1"; PASS=$((PASS + 1)); }
 fail() { echo "  [FAIL] $1: $2"; FAIL=$((FAIL + 1)); }
 
-qc() { HOME="$TEST_HOME" "$BINARY" "$@"; }
+ravbot_cmd() { HOME="$TEST_HOME" "$BINARY" "$@"; }
 
 require_cmd() {
     if ! command -v "$1" >/dev/null 2>&1; then
@@ -40,7 +40,7 @@ require_cmd() {
 
 # ---------- Pre-flight ----------
 
-echo "=== QuantClaw Onboard Integration Test ==="
+echo "=== RavBot Onboard Integration Test ==="
 echo "Binary : $BINARY"
 echo "TestDir: $TEST_HOME"
 echo ""
@@ -58,7 +58,7 @@ mkdir -p "$TEST_HOME"
 
 echo "--- Phase 1: Initial onboard ---"
 
-qc onboard --quick >"$TEST_HOME/onboard.log" 2>&1
+ravbot_cmd onboard --quick >"$TEST_HOME/onboard.log" 2>&1
 RC=$?
 
 if [[ $RC -eq 0 ]]; then
@@ -72,7 +72,7 @@ fi
 echo ""
 echo "--- Phase 2: Workspace structure ---"
 
-WS="$TEST_HOME/.quantclaw/agents/main/workspace"
+WS="$TEST_HOME/.ravbot/agents/main/workspace"
 
 if [[ -d "$WS" ]]; then
     pass "O2.1 workspace at agents/main/workspace"
@@ -81,14 +81,14 @@ else
 fi
 
 # Must NOT use legacy agents/default/ path
-if [[ ! -d "$TEST_HOME/.quantclaw/agents/default" ]]; then
+if [[ ! -d "$TEST_HOME/.ravbot/agents/default" ]]; then
     pass "O2.2 no legacy agents/default/ directory"
 else
     fail "O2.2 no legacy agents/default/ directory" "agents/default/ exists"
 fi
 
 # sessions dir
-if [[ -d "$TEST_HOME/.quantclaw/agents/main/sessions" ]]; then
+if [[ -d "$TEST_HOME/.ravbot/agents/main/sessions" ]]; then
     pass "O2.3 sessions directory created"
 else
     fail "O2.3 sessions directory created" "not found"
@@ -113,18 +113,18 @@ done
 echo ""
 echo "--- Phase 4: Config file ---"
 
-CFG="$TEST_HOME/.quantclaw/quantclaw.json"
+CFG="$TEST_HOME/.ravbot/ravbot.json"
 
 if [[ -f "$CFG" ]]; then
-    pass "O4.1 quantclaw.json exists"
+    pass "O4.1 ravbot.json exists"
 else
-    fail "O4.1 quantclaw.json exists" "not found"
+    fail "O4.1 ravbot.json exists" "not found"
 fi
 
 if python3 -c "import json; json.load(open('$CFG'))" 2>/dev/null; then
-    pass "O4.2 quantclaw.json is valid JSON"
+    pass "O4.2 ravbot.json is valid JSON"
 else
-    fail "O4.2 quantclaw.json is valid JSON" "parse error"
+    fail "O4.2 ravbot.json is valid JSON" "parse error"
 fi
 
 for key in agent gateway models; do
@@ -148,7 +148,7 @@ fi
 echo ""
 echo "--- Phase 5: Built-in skills ---"
 
-SKILLS_DIR="$TEST_HOME/.quantclaw/skills"
+SKILLS_DIR="$TEST_HOME/.ravbot/skills"
 EXPECTED_SKILLS=(search weather github healthcheck skill-creator)
 for skill in "${EXPECTED_SKILLS[@]}"; do
     if [[ -d "$SKILLS_DIR/$skill" ]]; then
@@ -164,7 +164,7 @@ echo ""
 echo "--- Phase 6: Config CLI commands ---"
 
 # config validate
-OUT=$(qc config validate 2>&1)
+OUT=$(ravbot_cmd config validate 2>&1)
 if echo "$OUT" | grep -qi "valid"; then
     pass "O6.1 config validate reports valid"
 else
@@ -172,7 +172,7 @@ else
 fi
 
 # config schema — must mention known fields
-OUT=$(qc config schema 2>&1)
+OUT=$(ravbot_cmd config schema 2>&1)
 if echo "$OUT" | grep -qi "agent\|gateway\|model"; then
     pass "O6.2 config schema shows known fields"
 else
@@ -180,7 +180,7 @@ else
 fi
 
 # config get (full dump)
-OUT=$(qc config get 2>&1)
+OUT=$(ravbot_cmd config get 2>&1)
 if echo "$OUT" | grep -qi "agent\|gateway"; then
     pass "O6.3 config get returns config"
 else
@@ -204,7 +204,7 @@ with open(cfg_path, 'w') as f:
 PYEOF
 
 # Re-run onboard --quick
-qc onboard --quick >"$TEST_HOME/reonboard.log" 2>&1
+ravbot_cmd onboard --quick >"$TEST_HOME/reonboard.log" 2>&1
 RC=$?
 
 if [[ $RC -eq 0 ]]; then
@@ -251,7 +251,7 @@ if HOME="$TEST_HOME" "$BINARY" --version >/dev/null 2>&1; then
     pass "O8.2 --version exits 0"
 else
     OUT=$(HOME="$TEST_HOME" "$BINARY" --version 2>&1 || true)
-    if echo "$OUT" | grep -qi "quantclaw\|version\|[0-9]\+\.[0-9]\+"; then
+    if echo "$OUT" | grep -qi "ravbot\|version\|[0-9]\+\.[0-9]\+"; then
         pass "O8.2 --version shows version info"
     else
         fail "O8.2 --version shows version info" "output: $OUT"
